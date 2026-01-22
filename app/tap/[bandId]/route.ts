@@ -1,3 +1,4 @@
+// app/tap/[bandId]/route.ts
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
@@ -22,10 +23,11 @@ function makeShareToken(): string {
 
 export async function GET(
   req: Request,
-  { params }: { params: { bandId: string } }
+  context: { params: { bandId: string } }
 ) {
-  const bandCode = String(params.bandId ?? "").trim();
+  const bandCode = String(context?.params?.bandId ?? "").trim();
 
+  // NOTE: preserve your original flow (even though this currently redirects with an empty bandCode)
   if (!bandCode) {
     return redirectTo(`/setup?band=${encodeURIComponent(bandCode)}`, req);
   }
@@ -44,7 +46,9 @@ export async function GET(
 
   const status = String(band.status ?? "").toLowerCase();
   const isClaimed =
-    status === "claimed" || Boolean(band.owner_user_id) || Boolean(band.claimed_at);
+    status === "claimed" ||
+    Boolean(band.owner_user_id) ||
+    Boolean(band.claimed_at);
 
   // If not claimed → setup
   if (!isClaimed) {
@@ -86,15 +90,16 @@ export async function GET(
 
     // Keep using your existing /share/[token] route by inserting into share_tokens
     // Assumes your share_tokens table has columns: token, band_id, status, expires_at, created_at
-    // (Your previous code was already reading these.)
     const expiresAt = new Date(now.getTime() + 2 * 60 * 1000).toISOString(); // 2 minutes
 
-    const { error: insertError } = await supabaseAdmin.from("share_tokens").insert({
-      token,
-      band_id: band.id,
-      status: "active",
-      expires_at: expiresAt,
-    });
+    const { error: insertError } = await supabaseAdmin
+      .from("share_tokens")
+      .insert({
+        token,
+        band_id: band.id,
+        status: "active",
+        expires_at: expiresAt,
+      });
 
     // If insert fails, fall back to dashboard rather than breaking the tap
     if (insertError) {
@@ -106,11 +111,10 @@ export async function GET(
     // to read what to display. The correct “one tap then off” behavior should be:
     // - /share/[token] page reads band_state.tapshare_fields
     // - then /share/[token] turns tapshare_armed OFF (consumes it)
-    //
-    // If you paste your /share/[token] page or route, I’ll wire the consume/disarm.
     return redirectTo(`/share/${token}`, req);
   }
 
   // 4) Default: go to dashboard
   return redirectTo(`/dashboard?band=${encodeURIComponent(bandCode)}`, req);
 }
+
