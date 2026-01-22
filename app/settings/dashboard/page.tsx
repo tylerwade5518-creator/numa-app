@@ -66,7 +66,7 @@ export default function DashboardLayoutSettingsPage() {
                 defaultOn: true,
               },
               {
-                name: "Astro Action",
+                name: "Stardust Action",
                 description: "One main action the sky is asking for today.",
                 defaultOn: true,
               },

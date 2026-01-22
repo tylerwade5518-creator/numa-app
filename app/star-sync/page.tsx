@@ -32,7 +32,7 @@ interface CompatibilityResult {
 
 /**
  * Placeholder compatibility logic — safe to ship now.
- * You can swap this later for a real astrology engine.
+ * You can swap this later for a real Stardustlogy engine.
  */
 function getCompatibility(
   owner: ZodiacSign,
@@ -155,7 +155,7 @@ export default function StarSyncPage() {
       }}
     >
       {/* Dark veil */}
-      <div className="pointer-events-none absolute inset-0 bg-slate-950/70" />
+      <div className="pointer-events-none absolute inset-0 bg-slate-950/20" />
 
       {/* Moving stars */}
       <AnimatedSpaceBackground />

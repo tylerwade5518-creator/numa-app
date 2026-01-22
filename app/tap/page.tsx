@@ -1,20 +1,28 @@
-'use client';
+"use client";
 
-import React from 'react';
+import { useSearchParams, useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function TapPage() {
+  const router = useRouter();
+  const params = useSearchParams();
+  const bandId = params.get("band");
+
+  useEffect(() => {
+    if (!bandId) return;
+
+    // Later: verify real band IDs from database
+    console.log("Band tapped:", bandId);
+
+    // For now: quick redirect to Dashboard
+    router.push(`/dashboard?band=${bandId}`);
+  }, [bandId, router]);
+
   return (
-    <main className="min-h-screen flex items-center justify-center bg-black text-slate-100">
-      <div className="max-w-md text-center px-6 py-8 border border-slate-700/60 rounded-2xl bg-slate-900/60">
-        <h1 className="text-xl font-semibold tracking-wide mb-3">
-          NUMA Tap (Placeholder)
-        </h1>
-        <p className="text-sm text-slate-300 leading-relaxed">
-          This is a temporary tap screen so we can get the app deployed and
-          fully working on your band. The real tap behavior and flows will be
-          added in a later version.
-        </p>
-      </div>
+    <main className="min-h-screen bg-black text-slate-50 flex items-center justify-center">
+      <p className="text-slate-400 text-sm">
+        Detecting band… redirecting…
+      </p>
     </main>
   );
 }
