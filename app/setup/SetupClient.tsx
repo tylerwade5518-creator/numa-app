@@ -224,7 +224,7 @@ export default function SetupClient() {
           // If you have columns, you can store these later. Keeping it minimal right now.
           // sign,
         })
-        .eq("id", user.id);
+        .eq("user_id", user.id);
 
       if (profErr) throw profErr;
 
