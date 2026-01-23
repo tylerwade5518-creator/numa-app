@@ -20,29 +20,49 @@ function makeShareToken(): string {
   return crypto.randomUUID().replace(/-/g, "");
 }
 
+// NEW: Smart band lookup (bandId might be band_code OR id)
+async function findBandSmart(bandIdOrCode: string) {
+  // Try by band_code first (your original intent)
+  const byCode = await supabaseAdmin
+    .from("bands")
+    .select("id, band_code, status, owner_user_id, claimed_at")
+    .eq("band_code", bandIdOrCode)
+    .maybeSingle();
+
+  if (byCode.data && !byCode.error) return byCode;
+
+  // Fallback: try by primary id (common when NFC stores the row id)
+  const byId = await supabaseAdmin
+    .from("bands")
+    .select("id, band_code, status, owner_user_id, claimed_at")
+    .eq("id", bandIdOrCode)
+    .maybeSingle();
+
+  return byId;
+}
+
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ bandId: string }> }
 ) {
   const resolvedParams = await params;
-  const bandCode = String(resolvedParams?.bandId ?? "").trim();
+  const bandIdOrCode = String(resolvedParams?.bandId ?? "").trim();
 
   // Preserve your original flow
-  if (!bandCode) {
-    return redirectTo(`/setup?band=${encodeURIComponent(bandCode)}`, req);
+  if (!bandIdOrCode) {
+    return redirectTo(`/setup?band=${encodeURIComponent(bandIdOrCode)}`, req);
   }
 
-  // 1) Find band by band_code
-  const { data: band, error: bandError } = await supabaseAdmin
-    .from("bands")
-    .select("id, band_code, status, owner_user_id, claimed_at")
-    .eq("band_code", bandCode)
-    .maybeSingle();
+  // 1) Find band (SMART lookup: band_code OR id)
+  const { data: band, error: bandError } = await findBandSmart(bandIdOrCode);
 
   // If band missing/unreadable → setup
   if (bandError || !band) {
-    return redirectTo(`/setup?band=${encodeURIComponent(bandCode)}`, req);
+    return redirectTo(`/setup?band=${encodeURIComponent(bandIdOrCode)}`, req);
   }
+
+  // IMPORTANT: from here on, use the real band_code for state checks/redirects
+  const resolvedBandCode = String(band.band_code ?? bandIdOrCode).trim();
 
   const status = String(band.status ?? "").toLowerCase();
   const isClaimed =
@@ -52,7 +72,7 @@ export async function GET(
 
   // If not claimed → setup
   if (!isClaimed) {
-    return redirectTo(`/setup?band=${encodeURIComponent(bandCode)}`, req);
+    return redirectTo(`/setup?band=${encodeURIComponent(resolvedBandCode)}`, req);
   }
 
   // 2) Check band_state table (keyed by band_code)
@@ -62,12 +82,15 @@ export async function GET(
   const { data: stateRow, error: stateError } = await supabaseAdmin
     .from("band_state")
     .select("band_code, tapshare_armed, tapshare_fields, tapshare_armed_until")
-    .eq("band_code", bandCode)
+    .eq("band_code", resolvedBandCode)
     .maybeSingle();
 
   // If state table errors, fail gracefully to dashboard
   if (stateError) {
-    return redirectTo(`/dashboard?band=${encodeURIComponent(bandCode)}`, req);
+    return redirectTo(
+      `/dashboard?band=${encodeURIComponent(resolvedBandCode)}`,
+      req
+    );
   }
 
   const armed = Boolean(stateRow?.tapshare_armed);
@@ -93,14 +116,17 @@ export async function GET(
       .from("share_tokens")
       .insert({
         token,
-        band_id: band.id,
+        band_id: band.id, // keep your original behavior
         status: "active",
         expires_at: expiresAt,
       });
 
     // If insert fails, fall back to dashboard rather than breaking the tap
     if (insertError) {
-      return redirectTo(`/dashboard?band=${encodeURIComponent(bandCode)}`, req);
+      return redirectTo(
+        `/dashboard?band=${encodeURIComponent(resolvedBandCode)}`,
+        req
+      );
     }
 
     // Not disarming here; /share/[token] should consume/disarm.
@@ -108,5 +134,5 @@ export async function GET(
   }
 
   // 4) Default: go to dashboard
-  return redirectTo(`/dashboard?band=${encodeURIComponent(bandCode)}`, req);
+  return redirectTo(`/dashboard?band=${encodeURIComponent(resolvedBandCode)}`, req);
 }
