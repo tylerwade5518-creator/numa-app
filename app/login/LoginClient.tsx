@@ -1,15 +1,35 @@
 // app/login/page.tsx
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createSupabaseBrowser } from "../../lib/supabase/client";
+
+const PENDING_BAND_STORAGE_KEY = "numa:pendingBandCode";
+
+function appendBandParam(path: string, band: string) {
+  try {
+    // If already an absolute URL, parse directly; otherwise anchor to current origin.
+    const base =
+      typeof window !== "undefined" ? window.location.origin : "http://localhost";
+    const u = new URL(path, base);
+    if (!u.searchParams.get("band")) u.searchParams.set("band", band);
+    // Return same shape as input (relative stays relative)
+    return u.pathname + (u.search ? u.search : "") + (u.hash ? u.hash : "");
+  } catch {
+    // Fallback: naive append
+    const hasQ = path.includes("?");
+    return path + (hasQ ? "&" : "?") + `band=${encodeURIComponent(band)}`;
+  }
+}
 
 export default function LoginClient() {
   const router = useRouter();
   const sp = useSearchParams();
 
-  const redirectTo = sp.get("redirect") || "/dashboard";
+  const bandFromUrl = (sp.get("band") || "").trim();
+  const redirectRaw = sp.get("redirect") || "/setup";
+
   const supabase = useMemo(() => createSupabaseBrowser(), []);
 
   const [email, setEmail] = useState("");
@@ -17,6 +37,19 @@ export default function LoginClient() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Persist pending band code so it survives auth flows
+  useEffect(() => {
+    if (!bandFromUrl) return;
+    try {
+      localStorage.setItem(PENDING_BAND_STORAGE_KEY, bandFromUrl);
+    } catch {
+      // ignore
+    }
+  }, [bandFromUrl]);
+
+  // Ensure redirect keeps band in the URL when present
+  const redirectTo = bandFromUrl ? appendBandParam(redirectRaw, bandFromUrl) : redirectRaw;
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,6 +72,13 @@ export default function LoginClient() {
     }
   };
 
+  const goToSignup = () => {
+    const qs = new URLSearchParams();
+    qs.set("redirect", redirectTo);
+    if (bandFromUrl) qs.set("band", bandFromUrl);
+    router.push(`/signup?${qs.toString()}`);
+  };
+
   return (
     <main className="min-h-screen bg-black text-slate-100 flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-md rounded-3xl border border-slate-700/70 bg-slate-900/70 p-6 sm:p-8 backdrop-blur-md shadow-2xl">
@@ -50,6 +90,13 @@ export default function LoginClient() {
           <p className="mt-2 text-sm text-slate-300">
             Enter your email and password to access your dashboard.
           </p>
+
+          {bandFromUrl && (
+            <p className="mt-3 text-[11px] text-slate-400">
+              Band detected:{" "}
+              <span className="font-semibold text-slate-200">{bandFromUrl}</span>
+            </p>
+          )}
         </div>
 
         <form onSubmit={onSubmit} className="space-y-4">
@@ -102,9 +149,7 @@ export default function LoginClient() {
           Don’t have an account?{" "}
           <button
             className="text-sky-300 hover:text-sky-200 underline"
-            onClick={() =>
-              router.push(`/signup?redirect=${encodeURIComponent(redirectTo)}`)
-            }
+            onClick={goToSignup}
           >
             Create one
           </button>

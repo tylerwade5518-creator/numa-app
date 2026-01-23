@@ -1,18 +1,38 @@
 // app/signup/page.tsx
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createSupabaseBrowser } from "../../lib/supabase/client";
+
+const PENDING_BAND_STORAGE_KEY = "numa:pendingBandCode";
 
 function isValidUsername(u: string) {
   return /^[a-zA-Z0-9._-]+$/.test(u);
 }
 
+function appendBandParam(path: string, band: string) {
+  try {
+    const base =
+      typeof window !== "undefined" ? window.location.origin : "http://localhost";
+    const u = new URL(path, base);
+    if (!u.searchParams.get("band")) u.searchParams.set("band", band);
+    return u.pathname + (u.search ? u.search : "") + (u.hash ? u.hash : "");
+  } catch {
+    const hasQ = path.includes("?");
+    return path + (hasQ ? "&" : "?") + `band=${encodeURIComponent(band)}`;
+  }
+}
+
 export default function SignupClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get("redirect") || "/dashboard";
+
+  const redirectRaw = searchParams.get("redirect") || "/setup";
+  const bandFromUrl = (searchParams.get("band") || "").trim();
+
+  // Keep band attached to redirect path so the next page can keep it too
+  const redirect = bandFromUrl ? appendBandParam(redirectRaw, bandFromUrl) : redirectRaw;
 
   // Create a browser client instance for this page
   const supabase = useMemo(() => createSupabaseBrowser(), []);
@@ -25,6 +45,16 @@ export default function SignupClient() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+
+  // Persist pending band code so it survives auth flows
+  useEffect(() => {
+    if (!bandFromUrl) return;
+    try {
+      localStorage.setItem(PENDING_BAND_STORAGE_KEY, bandFromUrl);
+    } catch {
+      // ignore
+    }
+  }, [bandFromUrl]);
 
   const canSubmit = useMemo(() => {
     if (!displayName.trim()) return false;
@@ -67,7 +97,7 @@ export default function SignupClient() {
           : "http://localhost:3000";
 
       // After user clicks email, Supabase will send them here:
-      // /auth/callback?code=...&next=/dashboard
+      // /auth/callback?code=...&next=/dashboard (or whatever redirect is)
       const emailRedirectTo = `${origin}/auth/callback?next=${encodeURIComponent(
         redirect
       )}`;
@@ -77,8 +107,6 @@ export default function SignupClient() {
         password: pw,
         options: {
           emailRedirectTo,
-          // These go into auth.users.raw_user_meta_data
-          // Your DB trigger can copy them into public.profiles automatically
           data: {
             display_name: dn,
             username: un,
@@ -88,15 +116,14 @@ export default function SignupClient() {
 
       if (signUpError) throw signUpError;
 
-      // If email confirm is ON, session is usually null until they click the email.
-      // We do NOT insert into profiles here (trigger handles it, avoids RLS issues).
+      // If email confirm is OFF, session exists and we can move immediately.
       if (data.session) {
         router.replace(redirect);
         return;
       }
 
       setInfo(
-        "Account created. Check your email to confirm — then you’ll be sent to your dashboard automatically."
+        "Account created. Check your email to confirm — then you’ll continue setup automatically."
       );
     } catch (err: any) {
       setError(err?.message || "Signup failed.");
@@ -115,6 +142,13 @@ export default function SignupClient() {
         <p className="mt-1 text-sm text-slate-300">
           This creates your long-term NUMA login.
         </p>
+
+        {bandFromUrl && (
+          <p className="mt-3 text-[11px] text-slate-400">
+            Band detected:{" "}
+            <span className="font-semibold text-slate-200">{bandFromUrl}</span>
+          </p>
+        )}
 
         <form onSubmit={handleSignup} className="mt-6 space-y-4">
           <div>
@@ -201,9 +235,12 @@ export default function SignupClient() {
             Already have an account?{" "}
             <button
               type="button"
-              onClick={() =>
-                router.push(`/login?redirect=${encodeURIComponent(redirect)}`)
-              }
+              onClick={() => {
+                const qs = new URLSearchParams();
+                qs.set("redirect", redirect);
+                if (bandFromUrl) qs.set("band", bandFromUrl);
+                router.push(`/login?${qs.toString()}`);
+              }}
               className="text-sky-300 hover:text-sky-200 underline"
             >
               Log in

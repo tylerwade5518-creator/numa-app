@@ -17,7 +17,6 @@ function redirectTo(path: string, req: Request) {
 
 // Helper: generate a token for /share/[token]
 function makeShareToken(): string {
-  // crypto.randomUUID() is available in Node runtime used by Next server routes
   return crypto.randomUUID().replace(/-/g, "");
 }
 
@@ -28,12 +27,12 @@ export async function GET(
   const resolvedParams = await params;
   const bandCode = String(resolvedParams?.bandId ?? "").trim();
 
-  // NOTE: preserve your original flow (even though this currently redirects with an empty bandCode)
+  // Preserve your original flow
   if (!bandCode) {
     return redirectTo(`/setup?band=${encodeURIComponent(bandCode)}`, req);
   }
 
-  // 1) Find band by band_code (matches your existing design)
+  // 1) Find band by band_code
   const { data: band, error: bandError } = await supabaseAdmin
     .from("bands")
     .select("id, band_code, status, owner_user_id, claimed_at")
@@ -56,14 +55,14 @@ export async function GET(
     return redirectTo(`/setup?band=${encodeURIComponent(bandCode)}`, req);
   }
 
-  // 2) Check new band_state table (band_id = bandCode)
+  // 2) Check band_state table (keyed by band_code)
   const now = new Date();
   const nowIso = now.toISOString();
 
   const { data: stateRow, error: stateError } = await supabaseAdmin
     .from("band_state")
-    .select("band_id, tapshare_armed, tapshare_fields, tapshare_armed_until")
-    .eq("band_id", bandCode)
+    .select("band_code, tapshare_armed, tapshare_fields, tapshare_armed_until")
+    .eq("band_code", bandCode)
     .maybeSingle();
 
   // If state table errors, fail gracefully to dashboard
@@ -88,15 +87,16 @@ export async function GET(
   // 3) If armed + not expired + has fields → create share token & redirect
   if (armed && notExpired && hasFields) {
     const token = makeShareToken();
-
     const expiresAt = new Date(now.getTime() + 2 * 60 * 1000).toISOString(); // 2 minutes
 
-    const { error: insertError } = await supabaseAdmin.from("share_tokens").insert({
-      token,
-      band_id: band.id,
-      status: "active",
-      expires_at: expiresAt,
-    });
+    const { error: insertError } = await supabaseAdmin
+      .from("share_tokens")
+      .insert({
+        token,
+        band_id: band.id,
+        status: "active",
+        expires_at: expiresAt,
+      });
 
     // If insert fails, fall back to dashboard rather than breaking the tap
     if (insertError) {
