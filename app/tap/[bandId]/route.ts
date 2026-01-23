@@ -4,37 +4,52 @@ import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
-// Service role client (server-only). Make sure SUPABASE_SERVICE_ROLE_KEY is set.
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// Helper: safe redirect
-function redirectTo(path: string, req: Request) {
-  return NextResponse.redirect(new URL(path, req.url));
+function redirectTo(path: string, req: Request, reason?: string) {
+  const url = new URL(path, req.url);
+  if (reason) url.searchParams.set("reason", reason);
+  return NextResponse.redirect(url);
 }
 
-// Helper: generate a token for /share/[token]
 function makeShareToken(): string {
   return crypto.randomUUID().replace(/-/g, "");
 }
 
-// NEW: Smart band lookup (bandId might be band_code OR id)
+function bandIsClaimed(band: any): boolean {
+  const status = String(band?.status ?? "").toLowerCase();
+  return (
+    status.includes("claim") ||
+    Boolean(band?.owner_user_id) ||
+    Boolean(band?.owner_id) ||
+    Boolean(band?.user_id) ||
+    Boolean(band?.claimed_by) ||
+    Boolean(band?.profile_id) ||
+    Boolean(band?.claimed_at)
+  );
+}
+
 async function findBandSmart(bandIdOrCode: string) {
-  // Try by band_code first (your original intent)
   const byCode = await supabaseAdmin
     .from("bands")
-    .select("id, band_code, status, owner_user_id, claimed_at")
+    .select("*")
     .eq("band_code", bandIdOrCode)
     .maybeSingle();
-
   if (byCode.data && !byCode.error) return byCode;
 
-  // Fallback: try by primary id (common when NFC stores the row id)
+  const byCodeIlike = await supabaseAdmin
+    .from("bands")
+    .select("*")
+    .ilike("band_code", bandIdOrCode)
+    .maybeSingle();
+  if (byCodeIlike.data && !byCodeIlike.error) return byCodeIlike;
+
   const byId = await supabaseAdmin
     .from("bands")
-    .select("id, band_code, status, owner_user_id, claimed_at")
+    .select("*")
     .eq("id", bandIdOrCode)
     .maybeSingle();
 
@@ -48,49 +63,38 @@ export async function GET(
   const resolvedParams = await params;
   const bandIdOrCode = String(resolvedParams?.bandId ?? "").trim();
 
-  // Preserve your original flow
   if (!bandIdOrCode) {
-    return redirectTo(`/setup?band=${encodeURIComponent(bandIdOrCode)}`, req);
+    return redirectTo(`/setup?band=${encodeURIComponent(bandIdOrCode)}`, req, "no_band_param");
   }
 
-  // 1) Find band (SMART lookup: band_code OR id)
   const { data: band, error: bandError } = await findBandSmart(bandIdOrCode);
 
-  // If band missing/unreadable → setup
   if (bandError || !band) {
-    return redirectTo(`/setup?band=${encodeURIComponent(bandIdOrCode)}`, req);
+    return redirectTo(
+      `/setup?band=${encodeURIComponent(bandIdOrCode)}`,
+      req,
+      bandError ? "band_lookup_error" : "band_not_found"
+    );
   }
 
-  // IMPORTANT: from here on, use the real band_code for state checks/redirects
-  const resolvedBandCode = String(band.band_code ?? bandIdOrCode).trim();
+  const bandCode = String(band.band_code ?? bandIdOrCode).trim();
 
-  const status = String(band.status ?? "").toLowerCase();
-  const isClaimed =
-    status === "claimed" ||
-    Boolean(band.owner_user_id) ||
-    Boolean(band.claimed_at);
-
-  // If not claimed → setup
+  const isClaimed = bandIsClaimed(band);
   if (!isClaimed) {
-    return redirectTo(`/setup?band=${encodeURIComponent(resolvedBandCode)}`, req);
+    return redirectTo(`/setup?band=${encodeURIComponent(bandCode)}`, req, "band_not_claimed");
   }
 
-  // 2) Check band_state table (keyed by band_code)
   const now = new Date();
   const nowIso = now.toISOString();
 
   const { data: stateRow, error: stateError } = await supabaseAdmin
     .from("band_state")
     .select("band_code, tapshare_armed, tapshare_fields, tapshare_armed_until")
-    .eq("band_code", resolvedBandCode)
+    .eq("band_code", bandCode)
     .maybeSingle();
 
-  // If state table errors, fail gracefully to dashboard
   if (stateError) {
-    return redirectTo(
-      `/dashboard?band=${encodeURIComponent(resolvedBandCode)}`,
-      req
-    );
+    return redirectTo(`/dashboard?band=${encodeURIComponent(bandCode)}`, req, "band_state_error");
   }
 
   const armed = Boolean(stateRow?.tapshare_armed);
@@ -101,38 +105,34 @@ export async function GET(
 
   const notExpired = !armedUntilIso || armedUntilIso > nowIso;
 
-  // Also require at least one field selected
   const fields = Array.isArray(stateRow?.tapshare_fields)
     ? (stateRow?.tapshare_fields as any[])
     : [];
   const hasFields = fields.length > 0;
 
-  // 3) If armed + not expired + has fields → create share token & redirect
   if (armed && notExpired && hasFields) {
     const token = makeShareToken();
-    const expiresAt = new Date(now.getTime() + 2 * 60 * 1000).toISOString(); // 2 minutes
+    const expiresAt = new Date(now.getTime() + 2 * 60 * 1000).toISOString();
 
-    const { error: insertError } = await supabaseAdmin
-      .from("share_tokens")
-      .insert({
-        token,
-        band_id: band.id, // keep your original behavior
-        status: "active",
-        expires_at: expiresAt,
-      });
+    const bandIdForToken = String(band.id ?? band.band_code ?? bandIdOrCode);
 
-    // If insert fails, fall back to dashboard rather than breaking the tap
+    const { error: insertError } = await supabaseAdmin.from("share_tokens").insert({
+      token,
+      band_id: bandIdForToken,
+      status: "active",
+      expires_at: expiresAt,
+    });
+
     if (insertError) {
-      return redirectTo(
-        `/dashboard?band=${encodeURIComponent(resolvedBandCode)}`,
-        req
-      );
+      return redirectTo(`/dashboard?band=${encodeURIComponent(bandCode)}`, req, "share_token_insert_failed");
     }
 
-    // Not disarming here; /share/[token] should consume/disarm.
-    return redirectTo(`/share/${token}`, req);
+    return redirectTo(`/share/${token}`, req, "ok_share");
   }
 
-  // 4) Default: go to dashboard
-  return redirectTo(`/dashboard?band=${encodeURIComponent(resolvedBandCode)}`, req);
+  if (!armed) return redirectTo(`/dashboard?band=${encodeURIComponent(bandCode)}`, req, "not_armed");
+  if (!notExpired) return redirectTo(`/dashboard?band=${encodeURIComponent(bandCode)}`, req, "armed_expired");
+  if (!hasFields) return redirectTo(`/dashboard?band=${encodeURIComponent(bandCode)}`, req, "no_fields_selected");
+
+  return redirectTo(`/dashboard?band=${encodeURIComponent(bandCode)}`, req, "default_dashboard");
 }
