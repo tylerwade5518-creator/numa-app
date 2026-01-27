@@ -90,8 +90,13 @@ function normalizeYouTube(s?: string) {
   if (v.startsWith("http://") || v.startsWith("https://")) return v;
 
   const cleaned = v.replace(/^\/+/, "");
+
   if (cleaned.startsWith("@")) return `https://www.youtube.com/${cleaned}`;
-  if (cleaned.startsWith("channel/") || cleaned.startsWith("c/") || cleaned.startsWith("user/")) {
+  if (
+    cleaned.startsWith("channel/") ||
+    cleaned.startsWith("c/") ||
+    cleaned.startsWith("user/")
+  ) {
     return `https://www.youtube.com/${cleaned}`;
   }
   const h = cleanHandle(cleaned);
@@ -148,7 +153,10 @@ function pickFirstString(obj: any, keys: string[]): string {
 }
 
 function pickName(obj: any): string {
-  return pickFirstString(obj, ["display_name", "name", "full_name"]) || pickFirstString(obj, ["username"]);
+  return (
+    pickFirstString(obj, ["display_name", "name", "full_name"]) ||
+    pickFirstString(obj, ["username"])
+  );
 }
 
 function pickPhone(obj: any): string {
@@ -223,8 +231,26 @@ function fieldsArrayToSnapshotFields(arr: any[]): Snapshot["fields"] {
   };
 }
 
-export default async function ShareTokenPage({ params }: { params: { token: string } }) {
-  const token = String(params.token || "").trim();
+function extractToken(params: Record<string, string | string[] | undefined>): string {
+  // Primary expected key
+  const direct = params?.token;
+  if (typeof direct === "string" && direct.trim()) return direct.trim();
+  if (Array.isArray(direct) && direct[0]?.trim()) return direct[0].trim();
+
+  // Fallback: first param value (covers cases like folder named [id])
+  const firstVal = Object.values(params || {})[0];
+  if (typeof firstVal === "string" && firstVal.trim()) return firstVal.trim();
+  if (Array.isArray(firstVal) && firstVal[0]?.trim()) return firstVal[0].trim();
+
+  return "";
+}
+
+export default async function ShareTokenPage({
+  params,
+}: {
+  params: Record<string, string | string[] | undefined>;
+}) {
+  const token = extractToken(params);
   const nowIso = new Date().toISOString();
 
   if (!token) {
@@ -232,6 +258,9 @@ export default async function ShareTokenPage({ params }: { params: { token: stri
       <div style={{ padding: 24, maxWidth: 520, margin: "0 auto" }}>
         <h1 style={{ fontSize: 22, fontWeight: 700 }}>Share unavailable</h1>
         <p style={{ opacity: 0.8, marginTop: 8 }}>Missing token.</p>
+        <p style={{ opacity: 0.7, marginTop: 10, fontSize: 12 }}>
+          Debug params keys: {Object.keys(params || {}).join(", ") || "(none)"}
+        </p>
       </div>
     );
   }
@@ -254,7 +283,9 @@ export default async function ShareTokenPage({ params }: { params: { token: stri
     return (
       <div style={{ padding: 24, maxWidth: 520, margin: "0 auto" }}>
         <h1 style={{ fontSize: 22, fontWeight: 700 }}>Share unavailable</h1>
-        <p style={{ opacity: 0.8, marginTop: 8 }}>Something went wrong loading this share.</p>
+        <p style={{ opacity: 0.8, marginTop: 8 }}>
+          Something went wrong loading this share.
+        </p>
         <div style={{ marginTop: 12, color: "#ff6b6b" }}>{error.message}</div>
       </div>
     );
@@ -265,7 +296,8 @@ export default async function ShareTokenPage({ params }: { params: { token: stri
       <div style={{ padding: 24, maxWidth: 520, margin: "0 auto" }}>
         <h1 style={{ fontSize: 22, fontWeight: 700 }}>Share expired</h1>
         <p style={{ opacity: 0.8, marginTop: 8 }}>
-          This Share Tap link is no longer active. Ask them to re-arm Tap Share and tap again.
+          This Share Tap link is no longer active. Ask them to re-arm Tap Share
+          and tap again.
         </p>
 
         <div style={{ marginTop: 18 }}>
@@ -312,7 +344,9 @@ export default async function ShareTokenPage({ params }: { params: { token: stri
 
     if (stateErr) throw stateErr;
 
-    const selectedFieldsArr = Array.isArray(state?.tapshare_fields) ? (state?.tapshare_fields as any[]) : [];
+    const selectedFieldsArr = Array.isArray(state?.tapshare_fields)
+      ? (state?.tapshare_fields as any[])
+      : [];
     const fieldsObj = fieldsArrayToSnapshotFields(selectedFieldsArr);
 
     // c) profile values for owner
@@ -368,11 +402,14 @@ export default async function ShareTokenPage({ params }: { params: { token: stri
 
   const items: Array<{ label: string; value?: string; href?: string }> = [];
 
-  if (fields.name && values.name) items.push({ label: "Name", value: values.name });
+  if (fields.name && values.name)
+    items.push({ label: "Name", value: values.name });
 
-  if (fields.phone && values.phone) items.push({ label: "Phone", value: values.phone, href: `tel:${values.phone}` });
+  if (fields.phone && values.phone)
+    items.push({ label: "Phone", value: values.phone, href: `tel:${values.phone}` });
 
-  if (fields.email && values.email) items.push({ label: "Email", value: values.email, href: `mailto:${values.email}` });
+  if (fields.email && values.email)
+    items.push({ label: "Email", value: values.email, href: `mailto:${values.email}` });
 
   if (fields.website && values.website) {
     const url = normalizeWebsite(values.website);
@@ -381,12 +418,14 @@ export default async function ShareTokenPage({ params }: { params: { token: stri
 
   if (fields.instagram && values.instagram) {
     const h = cleanHandle(values.instagram);
-    if (h) items.push({ label: "Instagram", value: `@${h}`, href: `https://instagram.com/${h}` });
+    if (h)
+      items.push({ label: "Instagram", value: `@${h}`, href: `https://instagram.com/${h}` });
   }
 
   if (fields.tiktok && values.tiktok) {
     const h = cleanHandle(values.tiktok);
-    if (h) items.push({ label: "TikTok", value: `@${h}`, href: `https://www.tiktok.com/@${h}` });
+    if (h)
+      items.push({ label: "TikTok", value: `@${h}`, href: `https://www.tiktok.com/@${h}` });
   }
 
   if (fields.linkedin && values.linkedin) {
@@ -397,12 +436,13 @@ export default async function ShareTokenPage({ params }: { params: { token: stri
   if (fields.x && values.x) {
     const url = normalizeX(values.x);
     const h = cleanHandle(values.x);
-    if (url && h)
+    if (url && h) {
       items.push({
         label: "X",
         value: values.x.startsWith("@") ? values.x : `@${h}`,
         href: url,
       });
+    }
   }
 
   if (fields.youtube && values.youtube) {
@@ -468,7 +508,12 @@ export default async function ShareTokenPage({ params }: { params: { token: stri
                 <div style={{ opacity: 0.75 }}>{it.label}</div>
                 <div style={{ textAlign: "right" }}>
                   {it.href ? (
-                    <a href={it.href} style={{ textDecoration: "underline" }} target="_blank" rel="noreferrer">
+                    <a
+                      href={it.href}
+                      style={{ textDecoration: "underline" }}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
                       {it.value}
                     </a>
                   ) : (
