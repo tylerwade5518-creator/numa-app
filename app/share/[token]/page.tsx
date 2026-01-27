@@ -90,7 +90,6 @@ function normalizeYouTube(s?: string) {
   if (v.startsWith("http://") || v.startsWith("https://")) return v;
 
   const cleaned = v.replace(/^\/+/, "");
-
   if (cleaned.startsWith("@")) return `https://www.youtube.com/${cleaned}`;
   if (
     cleaned.startsWith("channel/") ||
@@ -231,48 +230,32 @@ function fieldsArrayToSnapshotFields(arr: any[]): Snapshot["fields"] {
   };
 }
 
-function extractToken(params: Record<string, string | string[] | undefined>): string {
-  // Primary expected key
-  const direct = params?.token;
-  if (typeof direct === "string" && direct.trim()) return direct.trim();
-  if (Array.isArray(direct) && direct[0]?.trim()) return direct[0].trim();
-
-  // Fallback: first param value (covers cases like folder named [id])
-  const firstVal = Object.values(params || {})[0];
-  if (typeof firstVal === "string" && firstVal.trim()) return firstVal.trim();
-  if (Array.isArray(firstVal) && firstVal[0]?.trim()) return firstVal[0].trim();
-
-  return "";
-}
-
 export default async function ShareTokenPage({
   params,
 }: {
-  params: Record<string, string | string[] | undefined>;
+  // Next.js (App Router) can pass params as a Promise in newer versions
+  params: Promise<{ token: string }>;
 }) {
-  const token = extractToken(params);
+  const resolved = await params;
+  const token = String(resolved?.token || "").trim();
   const nowIso = new Date().toISOString();
 
   if (!token) {
     return (
       <div style={{ padding: 24, maxWidth: 520, margin: "0 auto" }}>
         <h1 style={{ fontSize: 22, fontWeight: 700 }}>Share unavailable</h1>
-        <p style={{ opacity: 0.8, marginTop: 8 }}>Missing token.</p>
-        <p style={{ opacity: 0.7, marginTop: 10, fontSize: 12 }}>
-          Debug params keys: {Object.keys(params || {}).join(", ") || "(none)"}
+        <p style={{ opacity: 0.8, marginTop: 8 }}>
+          Missing token. (URL should look like /share/&lt;token&gt;)
         </p>
       </div>
     );
   }
 
-  // 1) Consume token ONLY if ACTIVE + not expired.
-  // NOTE: share_tokens table uses band_code (NOT band_id)
+  // Consume token ONLY if ACTIVE + not expired.
+  // Your schema uses: token, band_code, status, expires_at, created_at
   const { data: usedRow, error } = await supabaseAdmin
     .from("share_tokens")
-    .update({
-      status: "used",
-      used_at: nowIso,
-    })
+    .update({ status: "used" })
     .eq("token", token)
     .eq("status", "active")
     .gt("expires_at", nowIso)
@@ -299,7 +282,6 @@ export default async function ShareTokenPage({
           This Share Tap link is no longer active. Ask them to re-arm Tap Share
           and tap again.
         </p>
-
         <div style={{ marginTop: 18 }}>
           <Link
             href="/buy"
@@ -320,7 +302,7 @@ export default async function ShareTokenPage({
 
   const bandCode = String(usedRow.band_code).trim();
 
-  // 2) Build snapshot from bands + band_state + profiles.
+  // Build snapshot from bands + band_state + profiles.
   let snapshot: Snapshot = {};
 
   try {
@@ -330,26 +312,25 @@ export default async function ShareTokenPage({
       .select("band_code, owner_user_id")
       .eq("band_code", bandCode)
       .maybeSingle();
-
     if (bandErr) throw bandErr;
 
     const ownerUserId = band?.owner_user_id ?? null;
 
-    // b) band_state keyed by band_id = band_code (your current schema)
+    // b) band_state keyed by band_id = band_code (your current setup)
     const { data: state, error: stateErr } = await supabaseAdmin
       .from("band_state")
       .select("tapshare_fields")
       .eq("band_id", bandCode)
       .maybeSingle();
-
     if (stateErr) throw stateErr;
 
     const selectedFieldsArr = Array.isArray(state?.tapshare_fields)
       ? (state?.tapshare_fields as any[])
       : [];
+
     const fieldsObj = fieldsArrayToSnapshotFields(selectedFieldsArr);
 
-    // c) profile values for owner
+    // c) Read profile values for owner
     let profileRow: any = null;
     if (ownerUserId) {
       const { data: prof, error: profErr } = await supabaseAdmin
@@ -357,7 +338,6 @@ export default async function ShareTokenPage({
         .select("*")
         .eq("user_id", ownerUserId)
         .maybeSingle();
-
       if (profErr) throw profErr;
       profileRow = prof || null;
     }
@@ -402,8 +382,7 @@ export default async function ShareTokenPage({
 
   const items: Array<{ label: string; value?: string; href?: string }> = [];
 
-  if (fields.name && values.name)
-    items.push({ label: "Name", value: values.name });
+  if (fields.name && values.name) items.push({ label: "Name", value: values.name });
 
   if (fields.phone && values.phone)
     items.push({ label: "Phone", value: values.phone, href: `tel:${values.phone}` });
@@ -418,14 +397,12 @@ export default async function ShareTokenPage({
 
   if (fields.instagram && values.instagram) {
     const h = cleanHandle(values.instagram);
-    if (h)
-      items.push({ label: "Instagram", value: `@${h}`, href: `https://instagram.com/${h}` });
+    if (h) items.push({ label: "Instagram", value: `@${h}`, href: `https://instagram.com/${h}` });
   }
 
   if (fields.tiktok && values.tiktok) {
     const h = cleanHandle(values.tiktok);
-    if (h)
-      items.push({ label: "TikTok", value: `@${h}`, href: `https://www.tiktok.com/@${h}` });
+    if (h) items.push({ label: "TikTok", value: `@${h}`, href: `https://www.tiktok.com/@${h}` });
   }
 
   if (fields.linkedin && values.linkedin) {
