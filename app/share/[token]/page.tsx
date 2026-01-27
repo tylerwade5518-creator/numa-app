@@ -378,7 +378,6 @@ export default async function ShareTokenPage({
       .from("band_state")
       .update({
         tapshare_armed: false,
-        tapshare_fields: [],
         tapshare_armed_until: null,
       })
       .eq("band_id", bandCode);

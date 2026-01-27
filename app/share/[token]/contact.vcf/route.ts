@@ -60,7 +60,11 @@ function normalizeYouTube(s?: string) {
 
   const cleaned = v.replace(/^\/+/, "");
   if (cleaned.startsWith("@")) return `https://www.youtube.com/${cleaned}`;
-  if (cleaned.startsWith("channel/") || cleaned.startsWith("c/") || cleaned.startsWith("user/")) {
+  if (
+    cleaned.startsWith("channel/") ||
+    cleaned.startsWith("c/") ||
+    cleaned.startsWith("user/")
+  ) {
     return `https://www.youtube.com/${cleaned}`;
   }
   const h = cleanHandle(cleaned);
@@ -107,7 +111,7 @@ function pickName(obj: any): string {
   );
 }
 
-function fieldsFromArray(arr: any[]): Set<string> {
+function setFromArray(arr: any[]): Set<string> {
   return new Set(
     (arr || [])
       .map((x) => (typeof x === "string" ? x.trim().toLowerCase() : ""))
@@ -115,26 +119,43 @@ function fieldsFromArray(arr: any[]): Set<string> {
   );
 }
 
+// Better iPhone parsing when FN + N exist.
+// We'll do a simple N= (Lastname;Firstname;;;) if possible, else empty pieces.
+function buildN(fullName: string) {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return ";;;;";
+  if (parts.length === 1) return `;${parts[0]};;;`; // first name only
+  const last = parts[parts.length - 1];
+  const first = parts.slice(0, -1).join(" ");
+  return `${last};${first};;;`;
+}
+
 function buildVCard(opts: {
   fullName: string;
   phone?: string;
   email?: string;
   website?: string;
-  socials?: Array<{ label: string; url: string }>;
+  urls?: Array<{ label: string; url: string }>;
 }) {
   const lines: string[] = [];
+  const full = clean(opts.fullName) || "NUMA Contact";
+
   lines.push("BEGIN:VCARD");
   lines.push("VERSION:3.0");
-  lines.push(`FN:${clean(opts.fullName)}`);
+  lines.push(`FN:${full}`);
+  lines.push(`N:${buildN(full)}`);
 
-  if (opts.phone) lines.push(`TEL;TYPE=CELL:${clean(opts.phone)}`);
+  // These are the lines that should populate Phone/Email on iOS/Android
+  if (opts.phone) lines.push(`TEL;TYPE=CELL,VOICE:${clean(opts.phone)}`);
   if (opts.email) lines.push(`EMAIL;TYPE=INTERNET:${clean(opts.email)}`);
   if (opts.website) lines.push(`URL:${clean(opts.website)}`);
 
-  for (const s of opts.socials || []) {
-    // “itemX.URL” is widely supported; label goes into X-ABLabel
-    lines.push(`item1.URL:${clean(s.url)}`);
-    lines.push(`item1.X-ABLabel:${clean(s.label)}`);
+  // Add extra URLs (socials/payments). Many clients import these as website/links.
+  let idx = 1;
+  for (const u of opts.urls || []) {
+    idx += 1;
+    lines.push(`item${idx}.URL:${clean(u.url)}`);
+    lines.push(`item${idx}.X-ABLabel:${clean(u.label)}`);
   }
 
   lines.push("END:VCARD");
@@ -149,14 +170,12 @@ export async function GET(
   const token = String(resolved?.token || "").trim();
   if (!token) return new NextResponse("Missing token", { status: 400 });
 
-  // IMPORTANT:
-  // If your share page already set status=used, token will be "used" now.
-  // So for VCF we allow both active and used, as long as it's not expired.
   const nowIso = new Date().toISOString();
 
+  // Allow "used" tokens too (because the Share page marks them used before the user taps Save Contact)
   const { data: row, error } = await supabaseAdmin
     .from("share_tokens")
-    .select("band_code, status, expires_at")
+    .select("band_code, expires_at")
     .eq("token", token)
     .gt("expires_at", nowIso)
     .maybeSingle();
@@ -167,14 +186,14 @@ export async function GET(
 
   const bandCode = String(row.band_code).trim();
 
-  // Pull selected fields from band_state
+  // Read selected fields (if still present). If empty, we’ll fallback to common fields.
   const { data: state } = await supabaseAdmin
     .from("band_state")
     .select("tapshare_fields")
     .eq("band_id", bandCode)
     .maybeSingle();
 
-  const selected = fieldsFromArray(
+  const selected = setFromArray(
     Array.isArray(state?.tapshare_fields) ? (state?.tapshare_fields as any[]) : []
   );
 
@@ -199,82 +218,85 @@ export async function GET(
 
   const fullName = pickName(prof) || "NUMA Contact";
 
-  const phone = selected.has("phone")
+  // Helper: treat as allowed if selected includes it, OR if selection is empty (fallback mode).
+  const allow = (key: string) => selected.size === 0 || selected.has(key);
+
+  const phoneRaw = allow("phone")
     ? pickFirstString(prof, ["phone", "phone_number", "mobile", "mobile_phone"])
     : "";
-
-  const email = selected.has("email")
+  const emailRaw = allow("email")
     ? pickFirstString(prof, ["email", "contact_email"])
     : "";
-
-  const websiteRaw = selected.has("website")
+  const websiteRaw = allow("website")
     ? pickFirstString(prof, ["website", "site", "url"])
     : "";
+
   const website = websiteRaw ? normalizeWebsite(websiteRaw) : "";
 
-  const socials: Array<{ label: string; url: string }> = [];
+  const urls: Array<{ label: string; url: string }> = [];
 
-  if (selected.has("instagram")) {
+  if (allow("instagram")) {
     const h = cleanHandle(pickFirstString(prof, ["instagram", "ig", "instagram_handle"]));
-    if (h) socials.push({ label: "Instagram", url: `https://instagram.com/${h}` });
+    if (h) urls.push({ label: "Instagram", url: `https://instagram.com/${h}` });
   }
 
-  if (selected.has("tiktok")) {
+  if (allow("tiktok")) {
     const h = cleanHandle(pickFirstString(prof, ["tiktok", "tik_tok", "tiktok_handle"]));
-    if (h) socials.push({ label: "TikTok", url: `https://www.tiktok.com/@${h}` });
+    if (h) urls.push({ label: "TikTok", url: `https://www.tiktok.com/@${h}` });
   }
 
-  if (selected.has("linkedin")) {
+  if (allow("linkedin")) {
     const v = pickFirstString(prof, ["linkedin", "linked_in", "linkedin_url"]);
     const url = normalizeLinkedIn(v);
-    if (url) socials.push({ label: "LinkedIn", url });
+    if (url) urls.push({ label: "LinkedIn", url });
   }
 
-  if (selected.has("x") || selected.has("twitter")) {
+  if (allow("x") || allow("twitter")) {
     const v = pickFirstString(prof, ["x", "twitter", "twitter_handle"]);
     const url = normalizeX(v);
-    if (url) socials.push({ label: "X", url });
+    if (url) urls.push({ label: "X", url });
   }
 
-  if (selected.has("youtube")) {
+  if (allow("youtube")) {
     const v = pickFirstString(prof, ["youtube", "yt", "youtube_url"]);
     const url = normalizeYouTube(v);
-    if (url) socials.push({ label: "YouTube", url });
+    if (url) urls.push({ label: "YouTube", url });
   }
 
-  if (selected.has("whatsapp") || selected.has("wa")) {
+  if (allow("whatsapp") || allow("wa")) {
     const v = pickFirstString(prof, ["whatsapp", "whats_app", "wa"]);
     const url = normalizeWhatsApp(v);
-    if (url) socials.push({ label: "WhatsApp", url });
+    if (url) urls.push({ label: "WhatsApp", url });
   }
 
-  if (selected.has("snapchat")) {
+  if (allow("snapchat")) {
     const v = pickFirstString(prof, ["snapchat", "snap"]);
     const url = normalizeSnapchat(v);
-    if (url) socials.push({ label: "Snapchat", url });
+    if (url) urls.push({ label: "Snapchat", url });
   }
 
-  if (selected.has("venmo")) {
+  if (allow("venmo")) {
     const v = pickFirstString(prof, ["venmo"]);
     const url = normalizeVenmo(v);
-    if (url) socials.push({ label: "Venmo", url });
+    if (url) urls.push({ label: "Venmo", url });
   }
 
-  if (selected.has("cashapp") || selected.has("cash_app") || selected.has("cash")) {
+  if (allow("cashapp") || allow("cash_app") || allow("cash")) {
     const v = pickFirstString(prof, ["cashapp", "cash_app", "cash"]);
     const url = normalizeCashApp(v);
-    if (url) socials.push({ label: "Cash App", url });
+    if (url) urls.push({ label: "Cash App", url });
   }
 
   const vcf = buildVCard({
     fullName,
-    phone: phone || undefined,
-    email: email || undefined,
-    website: website || undefined,
-    socials,
+    phone: phoneRaw ? phoneRaw : undefined,
+    email: emailRaw ? emailRaw : undefined,
+    website: website ? website : undefined,
+    urls,
   });
 
-  const filename = `${fullName.replace(/[^\w\- ]+/g, "").trim() || "NUMA-Contact"}.vcf`;
+  const filename =
+    `${fullName.replace(/[^\w\- ]+/g, "").trim() || "NUMA-Contact"}.vcf`;
 
   return new NextResponse(vcf, {
     status: 200,
