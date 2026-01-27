@@ -21,7 +21,6 @@ type Snapshot = {
     linkedin?: boolean;
     x?: boolean;
     youtube?: boolean;
-
     whatsapp?: boolean;
     snapchat?: boolean;
     venmo?: boolean;
@@ -37,7 +36,6 @@ type Snapshot = {
     linkedin?: string;
     x?: string;
     youtube?: string;
-
     whatsapp?: string;
     snapchat?: string;
     venmo?: string;
@@ -68,14 +66,8 @@ function normalizeLinkedIn(s?: string) {
   if (!s) return "";
   const v = s.trim();
   if (!v) return "";
-
-  // Full URL already
   if (v.startsWith("http://") || v.startsWith("https://")) return v;
-
-  // If they pasted "linkedin.com/in/xxx"
   if (v.includes("linkedin.com/")) return `https://${v.replace(/^\/+/, "")}`;
-
-  // If they pasted a handle like "john-doe"
   const handle = v.replace(/^@/, "").trim();
   if (!handle) return "";
   return `https://www.linkedin.com/in/${handle}`;
@@ -98,35 +90,20 @@ function normalizeYouTube(s?: string) {
   if (v.startsWith("http://") || v.startsWith("https://")) return v;
 
   const cleaned = v.replace(/^\/+/, "");
-
-  // @handle
   if (cleaned.startsWith("@")) return `https://www.youtube.com/${cleaned}`;
-
-  // channel/ID, c/name, user/name
-  if (
-    cleaned.startsWith("channel/") ||
-    cleaned.startsWith("c/") ||
-    cleaned.startsWith("user/")
-  ) {
+  if (cleaned.startsWith("channel/") || cleaned.startsWith("c/") || cleaned.startsWith("user/")) {
     return `https://www.youtube.com/${cleaned}`;
   }
-
-  // fallback: treat as handle/name
   const h = cleanHandle(cleaned);
   if (!h) return "";
   return `https://www.youtube.com/@${h}`;
 }
 
-// NEW
 function normalizeWhatsApp(s?: string) {
   if (!s) return "";
   const v = s.trim();
   if (!v) return "";
-
-  // allow direct wa.me links
   if (v.startsWith("http://") || v.startsWith("https://")) return v;
-
-  // allow raw phone numbers like +1 (555)...
   const digits = onlyDigits(v);
   if (!digits) return "";
   return `https://wa.me/${digits}`;
@@ -136,9 +113,7 @@ function normalizeSnapchat(s?: string) {
   if (!s) return "";
   const v = s.trim();
   if (!v) return "";
-
   if (v.startsWith("http://") || v.startsWith("https://")) return v;
-
   const h = cleanHandle(v);
   if (!h) return "";
   return `https://www.snapchat.com/add/${h}`;
@@ -148,9 +123,7 @@ function normalizeVenmo(s?: string) {
   if (!s) return "";
   const v = s.trim();
   if (!v) return "";
-
   if (v.startsWith("http://") || v.startsWith("https://")) return v;
-
   const h = cleanHandle(v);
   if (!h) return "";
   return `https://venmo.com/u/${h}`;
@@ -160,9 +133,7 @@ function normalizeCashApp(s?: string) {
   if (!s) return "";
   const v = s.trim();
   if (!v) return "";
-
   if (v.startsWith("http://") || v.startsWith("https://")) return v;
-
   const tag = v.replace(/^\$/, "").trim();
   if (!tag) return "";
   return `https://cash.app/$${tag}`;
@@ -177,11 +148,7 @@ function pickFirstString(obj: any, keys: string[]): string {
 }
 
 function pickName(obj: any): string {
-  // profiles table uses display_name + username
-  return (
-    pickFirstString(obj, ["display_name", "name", "full_name"]) ||
-    pickFirstString(obj, ["username"])
-  );
+  return pickFirstString(obj, ["display_name", "name", "full_name"]) || pickFirstString(obj, ["username"]);
 }
 
 function pickPhone(obj: any): string {
@@ -216,7 +183,6 @@ function pickYouTube(obj: any): string {
   return pickFirstString(obj, ["youtube", "yt", "youtube_url"]);
 }
 
-// NEW pickers (your columns are expected to be: whatsapp, snapchat, venmo, cashapp)
 function pickWhatsApp(obj: any): string {
   return pickFirstString(obj, ["whatsapp", "whats_app", "wa"]);
 }
@@ -250,7 +216,6 @@ function fieldsArrayToSnapshotFields(arr: any[]): Snapshot["fields"] {
     linkedin: set.has("linkedin"),
     x: set.has("x") || set.has("twitter"),
     youtube: set.has("youtube"),
-
     whatsapp: set.has("whatsapp") || set.has("wa"),
     snapchat: set.has("snapchat"),
     venmo: set.has("venmo"),
@@ -258,15 +223,21 @@ function fieldsArrayToSnapshotFields(arr: any[]): Snapshot["fields"] {
   };
 }
 
-export default async function ShareTokenPage({
-  params,
-}: {
-  params: { token: string };
-}) {
+export default async function ShareTokenPage({ params }: { params: { token: string } }) {
   const token = String(params.token || "").trim();
   const nowIso = new Date().toISOString();
 
-  // 1) Single-use consume token ONLY if ACTIVE + not expired.
+  if (!token) {
+    return (
+      <div style={{ padding: 24, maxWidth: 520, margin: "0 auto" }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700 }}>Share unavailable</h1>
+        <p style={{ opacity: 0.8, marginTop: 8 }}>Missing token.</p>
+      </div>
+    );
+  }
+
+  // 1) Consume token ONLY if ACTIVE + not expired.
+  // NOTE: share_tokens table uses band_code (NOT band_id)
   const { data: usedRow, error } = await supabaseAdmin
     .from("share_tokens")
     .update({
@@ -276,28 +247,25 @@ export default async function ShareTokenPage({
     .eq("token", token)
     .eq("status", "active")
     .gt("expires_at", nowIso)
-    .select("band_id, prefs_snapshot")
+    .select("band_code")
     .maybeSingle();
 
   if (error) {
     return (
       <div style={{ padding: 24, maxWidth: 520, margin: "0 auto" }}>
         <h1 style={{ fontSize: 22, fontWeight: 700 }}>Share unavailable</h1>
-        <p style={{ opacity: 0.8, marginTop: 8 }}>
-          Something went wrong loading this share.
-        </p>
+        <p style={{ opacity: 0.8, marginTop: 8 }}>Something went wrong loading this share.</p>
         <div style={{ marginTop: 12, color: "#ff6b6b" }}>{error.message}</div>
       </div>
     );
   }
 
-  if (!usedRow) {
+  if (!usedRow?.band_code) {
     return (
       <div style={{ padding: 24, maxWidth: 520, margin: "0 auto" }}>
         <h1 style={{ fontSize: 22, fontWeight: 700 }}>Share expired</h1>
         <p style={{ opacity: 0.8, marginTop: 8 }}>
-          This Share Tap link is no longer active. Ask them to re-arm Tap Share
-          and tap again.
+          This Share Tap link is no longer active. Ask them to re-arm Tap Share and tap again.
         </p>
 
         <div style={{ marginTop: 18 }}>
@@ -318,83 +286,81 @@ export default async function ShareTokenPage({
     );
   }
 
-  // 2) Backwards compatible: if prefs_snapshot exists, use it.
-  let snapshot: Snapshot = (usedRow.prefs_snapshot || {}) as Snapshot;
+  const bandCode = String(usedRow.band_code).trim();
 
-  // 3) If no snapshot, build it from bands + band_state + profiles.
-  if (!snapshot?.fields || !snapshot?.values) {
-    try {
-      // a) Get band_code + owner_user_id from bands using share_tokens.band_id
-      const { data: band } = await supabaseAdmin
-        .from("bands")
-        .select("id, band_code, owner_user_id")
-        .eq("id", usedRow.band_id)
+  // 2) Build snapshot from bands + band_state + profiles.
+  let snapshot: Snapshot = {};
+
+  try {
+    // a) Get owner_user_id from bands by band_code
+    const { data: band, error: bandErr } = await supabaseAdmin
+      .from("bands")
+      .select("band_code, owner_user_id")
+      .eq("band_code", bandCode)
+      .maybeSingle();
+
+    if (bandErr) throw bandErr;
+
+    const ownerUserId = band?.owner_user_id ?? null;
+
+    // b) band_state keyed by band_id = band_code (your current schema)
+    const { data: state, error: stateErr } = await supabaseAdmin
+      .from("band_state")
+      .select("tapshare_fields")
+      .eq("band_id", bandCode)
+      .maybeSingle();
+
+    if (stateErr) throw stateErr;
+
+    const selectedFieldsArr = Array.isArray(state?.tapshare_fields) ? (state?.tapshare_fields as any[]) : [];
+    const fieldsObj = fieldsArrayToSnapshotFields(selectedFieldsArr);
+
+    // c) profile values for owner
+    let profileRow: any = null;
+    if (ownerUserId) {
+      const { data: prof, error: profErr } = await supabaseAdmin
+        .from("profiles")
+        .select("*")
+        .eq("user_id", ownerUserId)
         .maybeSingle();
 
-      const bandCode = String(band?.band_code || "").trim();
-      const ownerUserId = band?.owner_user_id || null;
-
-      // b) band_state keyed by band_code (your flow uses band_state.band_id = band_code)
-      const { data: state } = await supabaseAdmin
-        .from("band_state")
-        .select("tapshare_fields")
-        .eq("band_id", bandCode)
-        .maybeSingle();
-
-      const selectedFieldsArr = Array.isArray(state?.tapshare_fields)
-        ? (state?.tapshare_fields as any[])
-        : [];
-
-      const fieldsObj = fieldsArrayToSnapshotFields(selectedFieldsArr);
-
-      // c) Read profile values for owner
-      let profileRow: any = null;
-      if (ownerUserId) {
-        const { data: prof } = await supabaseAdmin
-          .from("profiles")
-          .select("*")
-          .eq("user_id", ownerUserId)
-          .maybeSingle();
-        profileRow = prof || null;
-      }
-
-      const valuesObj: Snapshot["values"] = {
-        name: pickName(profileRow),
-        phone: pickPhone(profileRow),
-        email: pickEmail(profileRow),
-        website: pickWebsite(profileRow),
-        instagram: pickInstagram(profileRow),
-        tiktok: pickTikTok(profileRow),
-        linkedin: pickLinkedIn(profileRow),
-        x: pickX(profileRow),
-        youtube: pickYouTube(profileRow),
-
-        whatsapp: pickWhatsApp(profileRow),
-        snapchat: pickSnapchat(profileRow),
-        venmo: pickVenmo(profileRow),
-        cashapp: pickCashApp(profileRow),
-      };
-
-      snapshot = {
-        band_code: bandCode || undefined,
-        fields: fieldsObj,
-        values: valuesObj,
-      };
-
-      // d) Disarm Tap Share immediately (one tap then off)
-      if (bandCode) {
-        await supabaseAdmin
-          .from("band_state")
-          .update({
-            tapshare_armed: false,
-            tapshare_fields: [],
-            tapshare_armed_until: null,
-          })
-          .eq("band_id", bandCode);
-      }
-    } catch {
-      // fail closed / render safely
+      if (profErr) throw profErr;
+      profileRow = prof || null;
     }
+
+    const valuesObj: Snapshot["values"] = {
+      name: pickName(profileRow),
+      phone: pickPhone(profileRow),
+      email: pickEmail(profileRow),
+      website: pickWebsite(profileRow),
+      instagram: pickInstagram(profileRow),
+      tiktok: pickTikTok(profileRow),
+      linkedin: pickLinkedIn(profileRow),
+      x: pickX(profileRow),
+      youtube: pickYouTube(profileRow),
+      whatsapp: pickWhatsApp(profileRow),
+      snapchat: pickSnapchat(profileRow),
+      venmo: pickVenmo(profileRow),
+      cashapp: pickCashApp(profileRow),
+    };
+
+    snapshot = {
+      band_code: bandCode,
+      fields: fieldsObj,
+      values: valuesObj,
+    };
+
+    // d) Disarm Tap Share immediately (one tap then off)
+    await supabaseAdmin
+      .from("band_state")
+      .update({
+        tapshare_armed: false,
+        tapshare_fields: [],
+        tapshare_armed_until: null,
+      })
+      .eq("band_id", bandCode);
+  } catch {
+    // fail closed / render safely below
   }
 
   const fields = snapshot.fields || {};
@@ -404,11 +370,9 @@ export default async function ShareTokenPage({
 
   if (fields.name && values.name) items.push({ label: "Name", value: values.name });
 
-  if (fields.phone && values.phone)
-    items.push({ label: "Phone", value: values.phone, href: `tel:${values.phone}` });
+  if (fields.phone && values.phone) items.push({ label: "Phone", value: values.phone, href: `tel:${values.phone}` });
 
-  if (fields.email && values.email)
-    items.push({ label: "Email", value: values.email, href: `mailto:${values.email}` });
+  if (fields.email && values.email) items.push({ label: "Email", value: values.email, href: `mailto:${values.email}` });
 
   if (fields.website && values.website) {
     const url = normalizeWebsite(values.website);
@@ -446,7 +410,6 @@ export default async function ShareTokenPage({
     if (url) items.push({ label: "YouTube", value: values.youtube, href: url });
   }
 
-  // NEW items
   if (fields.whatsapp && values.whatsapp) {
     const url = normalizeWhatsApp(values.whatsapp);
     const digits = onlyDigits(values.whatsapp);
@@ -505,12 +468,7 @@ export default async function ShareTokenPage({
                 <div style={{ opacity: 0.75 }}>{it.label}</div>
                 <div style={{ textAlign: "right" }}>
                   {it.href ? (
-                    <a
-                      href={it.href}
-                      style={{ textDecoration: "underline" }}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
+                    <a href={it.href} style={{ textDecoration: "underline" }} target="_blank" rel="noreferrer">
                       {it.value}
                     </a>
                   ) : (
