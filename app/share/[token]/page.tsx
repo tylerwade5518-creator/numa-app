@@ -4,7 +4,6 @@ import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
-// IMPORTANT: only safe on the server. Never import this file into client components.
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -42,6 +41,22 @@ type Snapshot = {
     cashapp?: string;
   };
   band_code?: string;
+};
+
+const FIELD_LABELS: Record<string, string> = {
+  name: "Name",
+  phone: "Phone",
+  email: "Email",
+  website: "Website",
+  instagram: "Instagram",
+  tiktok: "TikTok",
+  linkedin: "LinkedIn",
+  x: "X",
+  youtube: "YouTube",
+  whatsapp: "WhatsApp",
+  snapchat: "Snapchat",
+  venmo: "Venmo",
+  cashapp: "Cash App",
 };
 
 function cleanHandle(s?: string) {
@@ -233,26 +248,41 @@ function fieldsArrayToSnapshotFields(arr: any[]): Snapshot["fields"] {
 export default async function ShareTokenPage({
   params,
 }: {
-  // Next.js (App Router) can pass params as a Promise in newer versions
   params: Promise<{ token: string }>;
 }) {
   const resolved = await params;
   const token = String(resolved?.token || "").trim();
   const nowIso = new Date().toISOString();
 
+  const baseShell = (title: string, message: string, extra?: React.ReactNode) => (
+    <div className="min-h-screen bg-black text-slate-100">
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(56,189,248,0.22),transparent_40%),radial-gradient(circle_at_80%_30%,rgba(250,204,21,0.18),transparent_42%),radial-gradient(circle_at_50%_90%,rgba(99,102,241,0.18),transparent_45%)]" />
+      <div className="fixed inset-0 opacity-40 bg-[linear-gradient(to_bottom,rgba(2,6,23,0.0),rgba(2,6,23,0.95))]" />
+      <main className="relative mx-auto flex min-h-screen max-w-xl flex-col justify-center px-5 py-10">
+        <div className="mb-5 flex items-center justify-center">
+          <div className="rounded-full border border-white/10 bg-slate-950/60 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-slate-200">
+            NUMA • Tap Share
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-slate-950/60 p-6 backdrop-blur-md shadow-[0_0_60px_rgba(0,0,0,0.55)]">
+          <h1 className="text-xl font-semibold">{title}</h1>
+          <p className="mt-2 text-sm text-slate-300">{message}</p>
+          {extra ? <div className="mt-4">{extra}</div> : null}
+        </div>
+
+        <div className="mt-6 text-center text-[11px] text-slate-500">
+          Shared once, then automatically turns off.
+        </div>
+      </main>
+    </div>
+  );
+
   if (!token) {
-    return (
-      <div style={{ padding: 24, maxWidth: 520, margin: "0 auto" }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700 }}>Share unavailable</h1>
-        <p style={{ opacity: 0.8, marginTop: 8 }}>
-          Missing token. (URL should look like /share/&lt;token&gt;)
-        </p>
-      </div>
-    );
+    return baseShell("Share unavailable", "Missing token. The link should look like /share/<token>.");
   }
 
-  // Consume token ONLY if ACTIVE + not expired.
-  // Your schema uses: token, band_code, status, expires_at, created_at
+  // Consume token only if active + not expired
   const { data: usedRow, error } = await supabaseAdmin
     .from("share_tokens")
     .update({ status: "used" })
@@ -263,66 +293,47 @@ export default async function ShareTokenPage({
     .maybeSingle();
 
   if (error) {
-    return (
-      <div style={{ padding: 24, maxWidth: 520, margin: "0 auto" }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700 }}>Share unavailable</h1>
-        <p style={{ opacity: 0.8, marginTop: 8 }}>
-          Something went wrong loading this share.
-        </p>
-        <div style={{ marginTop: 12, color: "#ff6b6b" }}>{error.message}</div>
+    return baseShell(
+      "Share unavailable",
+      "Something went wrong loading this share.",
+      <div className="rounded-2xl border border-red-300/20 bg-red-500/10 p-3 text-xs text-red-200">
+        {error.message}
       </div>
     );
   }
 
   if (!usedRow?.band_code) {
-    return (
-      <div style={{ padding: 24, maxWidth: 520, margin: "0 auto" }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700 }}>Share expired</h1>
-        <p style={{ opacity: 0.8, marginTop: 8 }}>
-          This Share Tap link is no longer active. Ask them to re-arm Tap Share
-          and tap again.
-        </p>
-        <div style={{ marginTop: 18 }}>
-          <Link
-            href="/buy"
-            style={{
-              display: "inline-block",
-              padding: "12px 14px",
-              borderRadius: 10,
-              textDecoration: "none",
-              border: "1px solid rgba(255,255,255,0.16)",
-            }}
-          >
-            Get a NUMA Band
-          </Link>
-        </div>
-      </div>
+    return baseShell(
+      "Share expired",
+      "This Share Tap link is no longer active. Ask them to re-arm Tap Share and tap again.",
+      <Link
+        href="/buy"
+        className="inline-flex items-center justify-center rounded-2xl border border-white/15 bg-slate-900/60 px-4 py-2.5 text-sm hover:bg-slate-900/80"
+      >
+        Get a NUMA Band
+      </Link>
     );
   }
 
   const bandCode = String(usedRow.band_code).trim();
 
-  // Build snapshot from bands + band_state + profiles.
+  // Build snapshot
   let snapshot: Snapshot = {};
 
   try {
-    // a) Get owner_user_id from bands by band_code
-    const { data: band, error: bandErr } = await supabaseAdmin
+    const { data: band } = await supabaseAdmin
       .from("bands")
       .select("band_code, owner_user_id")
       .eq("band_code", bandCode)
       .maybeSingle();
-    if (bandErr) throw bandErr;
 
     const ownerUserId = band?.owner_user_id ?? null;
 
-    // b) band_state keyed by band_id = band_code (your current setup)
-    const { data: state, error: stateErr } = await supabaseAdmin
+    const { data: state } = await supabaseAdmin
       .from("band_state")
       .select("tapshare_fields")
       .eq("band_id", bandCode)
       .maybeSingle();
-    if (stateErr) throw stateErr;
 
     const selectedFieldsArr = Array.isArray(state?.tapshare_fields)
       ? (state?.tapshare_fields as any[])
@@ -330,15 +341,13 @@ export default async function ShareTokenPage({
 
     const fieldsObj = fieldsArrayToSnapshotFields(selectedFieldsArr);
 
-    // c) Read profile values for owner
     let profileRow: any = null;
     if (ownerUserId) {
-      const { data: prof, error: profErr } = await supabaseAdmin
+      const { data: prof } = await supabaseAdmin
         .from("profiles")
         .select("*")
         .eq("user_id", ownerUserId)
         .maybeSingle();
-      if (profErr) throw profErr;
       profileRow = prof || null;
     }
 
@@ -364,7 +373,7 @@ export default async function ShareTokenPage({
       values: valuesObj,
     };
 
-    // d) Disarm Tap Share immediately (one tap then off)
+    // Disarm after share
     await supabaseAdmin
       .from("band_state")
       .update({
@@ -374,164 +383,155 @@ export default async function ShareTokenPage({
       })
       .eq("band_id", bandCode);
   } catch {
-    // fail closed / render safely below
+    // fail closed
   }
 
   const fields = snapshot.fields || {};
   const values = snapshot.values || {};
 
-  const items: Array<{ label: string; value?: string; href?: string }> = [];
+  const items: Array<{ key: string; label: string; value?: string; href?: string }> = [];
 
-  if (fields.name && values.name) items.push({ label: "Name", value: values.name });
+  if (fields.name && values.name) items.push({ key: "name", label: "Name", value: values.name });
 
   if (fields.phone && values.phone)
-    items.push({ label: "Phone", value: values.phone, href: `tel:${values.phone}` });
+    items.push({ key: "phone", label: "Phone", value: values.phone, href: `tel:${values.phone}` });
 
   if (fields.email && values.email)
-    items.push({ label: "Email", value: values.email, href: `mailto:${values.email}` });
+    items.push({ key: "email", label: "Email", value: values.email, href: `mailto:${values.email}` });
 
   if (fields.website && values.website) {
     const url = normalizeWebsite(values.website);
-    if (url) items.push({ label: "Website", value: values.website, href: url });
+    if (url) items.push({ key: "website", label: "Website", value: values.website, href: url });
   }
 
   if (fields.instagram && values.instagram) {
     const h = cleanHandle(values.instagram);
-    if (h) items.push({ label: "Instagram", value: `@${h}`, href: `https://instagram.com/${h}` });
+    if (h) items.push({ key: "instagram", label: "Instagram", value: `@${h}`, href: `https://instagram.com/${h}` });
   }
 
   if (fields.tiktok && values.tiktok) {
     const h = cleanHandle(values.tiktok);
-    if (h) items.push({ label: "TikTok", value: `@${h}`, href: `https://www.tiktok.com/@${h}` });
+    if (h) items.push({ key: "tiktok", label: "TikTok", value: `@${h}`, href: `https://www.tiktok.com/@${h}` });
   }
 
   if (fields.linkedin && values.linkedin) {
     const url = normalizeLinkedIn(values.linkedin);
-    if (url) items.push({ label: "LinkedIn", value: values.linkedin, href: url });
+    if (url) items.push({ key: "linkedin", label: "LinkedIn", value: values.linkedin, href: url });
   }
 
   if (fields.x && values.x) {
     const url = normalizeX(values.x);
     const h = cleanHandle(values.x);
-    if (url && h) {
-      items.push({
-        label: "X",
-        value: values.x.startsWith("@") ? values.x : `@${h}`,
-        href: url,
-      });
-    }
+    if (url && h) items.push({ key: "x", label: "X", value: values.x.startsWith("@") ? values.x : `@${h}`, href: url });
   }
 
   if (fields.youtube && values.youtube) {
     const url = normalizeYouTube(values.youtube);
-    if (url) items.push({ label: "YouTube", value: values.youtube, href: url });
+    if (url) items.push({ key: "youtube", label: "YouTube", value: values.youtube, href: url });
   }
 
   if (fields.whatsapp && values.whatsapp) {
     const url = normalizeWhatsApp(values.whatsapp);
     const digits = onlyDigits(values.whatsapp);
     const display = digits ? `+${digits}` : values.whatsapp;
-    if (url) items.push({ label: "WhatsApp", value: display, href: url });
+    if (url) items.push({ key: "whatsapp", label: "WhatsApp", value: display, href: url });
   }
 
   if (fields.snapchat && values.snapchat) {
     const h = cleanHandle(values.snapchat);
     const url = normalizeSnapchat(values.snapchat);
-    if (url && h) items.push({ label: "Snapchat", value: `@${h}`, href: url });
+    if (url && h) items.push({ key: "snapchat", label: "Snapchat", value: `@${h}`, href: url });
   }
 
   if (fields.venmo && values.venmo) {
     const h = cleanHandle(values.venmo);
     const url = normalizeVenmo(values.venmo);
-    if (url && h) items.push({ label: "Venmo", value: `@${h}`, href: url });
+    if (url && h) items.push({ key: "venmo", label: "Venmo", value: `@${h}`, href: url });
   }
 
   if (fields.cashapp && values.cashapp) {
     const tag = values.cashapp.replace(/^\$/, "").trim();
     const url = normalizeCashApp(values.cashapp);
-    if (url && tag) items.push({ label: "Cash App", value: `$${tag}`, href: url });
+    if (url && tag) items.push({ key: "cashapp", label: "Cash App", value: `$${tag}`, href: url });
   }
 
+  const displayTitle = values.name ? values.name : "Shared from NUMA";
+
   return (
-    <div style={{ padding: 24, maxWidth: 520, margin: "0 auto" }}>
-      <h1 style={{ fontSize: 22, fontWeight: 700 }}>Shared from NUMA</h1>
-      <p style={{ opacity: 0.8, marginTop: 8 }}>Here’s what they chose to share.</p>
+    <div className="min-h-screen bg-black text-slate-100">
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(56,189,248,0.22),transparent_40%),radial-gradient(circle_at_80%_30%,rgba(250,204,21,0.18),transparent_42%),radial-gradient(circle_at_50%_90%,rgba(99,102,241,0.18),transparent_45%)]" />
+      <div className="fixed inset-0 opacity-40 bg-[linear-gradient(to_bottom,rgba(2,6,23,0.0),rgba(2,6,23,0.95))]" />
 
-      <div
-        style={{
-          marginTop: 18,
-          padding: 16,
-          border: "1px solid rgba(255,255,255,0.12)",
-          borderRadius: 12,
-        }}
-      >
-        {items.length === 0 ? (
-          <div style={{ opacity: 0.8 }}>
-            Nothing was selected to share (or the profile fields are empty).
+      <main className="relative mx-auto max-w-xl px-5 py-10">
+        <div className="mb-6 flex items-center justify-between">
+          <div className="rounded-full border border-white/10 bg-slate-950/60 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-slate-200">
+            NUMA • Tap Share
           </div>
-        ) : (
-          <div style={{ display: "grid", gap: 12 }}>
-            {items.map((it) => (
-              <div
-                key={it.label}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: 12,
-                  paddingBottom: 10,
-                  borderBottom: "1px solid rgba(255,255,255,0.08)",
-                }}
-              >
-                <div style={{ opacity: 0.75 }}>{it.label}</div>
-                <div style={{ textAlign: "right" }}>
-                  {it.href ? (
-                    <a
-                      href={it.href}
-                      style={{ textDecoration: "underline" }}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {it.value}
-                    </a>
-                  ) : (
-                    <span>{it.value}</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
-          <a
-            href={`/share/${encodeURIComponent(token)}/contact.vcf`}
-            style={{
-              display: "block",
-              padding: "12px 14px",
-              borderRadius: 10,
-              textDecoration: "none",
-              border: "1px solid rgba(255,255,255,0.16)",
-              textAlign: "center",
-            }}
-          >
-            Save Contact
-          </a>
-
-          <Link
-            href="/buy"
-            style={{
-              display: "block",
-              padding: "12px 14px",
-              borderRadius: 10,
-              textDecoration: "none",
-              border: "1px solid rgba(255,255,255,0.16)",
-              textAlign: "center",
-            }}
-          >
-            Get a NUMA Band
-          </Link>
+          {snapshot.band_code ? (
+            <div className="text-[11px] text-slate-400">
+              Band: <span className="font-semibold text-slate-200">{snapshot.band_code}</span>
+            </div>
+          ) : null}
         </div>
-      </div>
+
+        <div className="rounded-3xl border border-white/10 bg-slate-950/60 p-6 backdrop-blur-md shadow-[0_0_60px_rgba(0,0,0,0.55)]">
+          <h1 className="text-xl font-semibold">{displayTitle}</h1>
+          <p className="mt-2 text-sm text-slate-300">Here’s what they chose to share.</p>
+
+          <div className="mt-5 grid gap-3">
+            {items.length === 0 ? (
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-slate-300">
+                Nothing was selected to share (or the profile fields are empty).
+              </div>
+            ) : (
+              items.map((it) => (
+                <div
+                  key={it.key}
+                  className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/20 px-4 py-3"
+                >
+                  <div className="text-[12px] uppercase tracking-[0.18em] text-slate-400">
+                    {it.label}
+                  </div>
+                  <div className="text-right text-sm text-slate-100">
+                    {it.href ? (
+                      <a
+                        href={it.href}
+                        className="underline decoration-white/20 underline-offset-4 hover:decoration-white/60"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {it.value}
+                      </a>
+                    ) : (
+                      <span>{it.value}</span>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="mt-6 grid gap-3">
+            <a
+              href={`/share/${encodeURIComponent(token)}/contact.vcf`}
+              className="flex items-center justify-center rounded-2xl border border-yellow-200/60 bg-gradient-to-r from-yellow-400/95 via-amber-300/95 to-yellow-200/95 px-4 py-3 text-sm font-semibold text-slate-950 shadow-[0_0_28px_rgba(250,204,21,0.45)] hover:brightness-110"
+            >
+              Save Contact
+            </a>
+
+            <Link
+              href="/buy"
+              className="flex items-center justify-center rounded-2xl border border-white/15 bg-slate-900/60 px-4 py-3 text-sm text-slate-100 hover:bg-slate-900/80"
+            >
+              Get a NUMA Band
+            </Link>
+          </div>
+
+          <div className="mt-5 text-center text-[11px] text-slate-500">
+            Shared once, then automatically turns off.
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
