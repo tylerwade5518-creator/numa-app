@@ -2,94 +2,291 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 import AnimatedSpaceBackground from "../dashboard/AnimatedSpaceBackground";
 
 type Slide = {
   key: string;
   title: string;
   subtitle: string;
-  // Put your real assets later:
-  // imageSrc?: string;
-  // videoSrc?: string;
+  // Use a real screenshot later (recommended). For now, placeholder gradients.
+  // You can swap these for <Image/> inside the phone screen when ready.
+  screen: React.ReactNode;
 };
-
-const SLIDES: Slide[] = [
-  {
-    key: "dashboard",
-    title: "Your daily dashboard — instantly",
-    subtitle:
-      "Tap your NUMA Band and your day opens in seconds: alignment, meters, and your next move.",
-  },
-  {
-    key: "stardust",
-    title: "Stardust Action",
-    subtitle:
-      "A simple challenge that nudges your day in the right direction — small moves, real momentum.",
-  },
-  {
-    key: "tapshare",
-    title: "Tap Share",
-    subtitle:
-      "Share exactly what you want with one tap — fast, secure, and intentional.",
-  },
-  {
-    key: "starsync",
-    title: "Star Sync",
-    subtitle:
-      "Get insight into the people around you — friendship, connection, and ambition in one scan.",
-  },
-];
 
 function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
 }
 
-export default function BuyPage() {
-  const [active, setActive] = useState(0);
-
-  // swipe handling
-  const startX = useRef<number | null>(null);
-  const deltaX = useRef<number>(0);
-
-  const goTo = (idx: number) => setActive(clamp(idx, 0, SLIDES.length - 1));
-  const next = () => goTo(active + 1);
-  const prev = () => goTo(active - 1);
-
-  const onTouchStart = (e: React.TouchEvent) => {
-    startX.current = e.touches[0]?.clientX ?? null;
-    deltaX.current = 0;
-  };
-
-  const onTouchMove = (e: React.TouchEvent) => {
-    if (startX.current == null) return;
-    const x = e.touches[0]?.clientX ?? startX.current;
-    deltaX.current = x - startX.current;
-  };
-
-  const onTouchEnd = () => {
-    const dx = deltaX.current;
-    startX.current = null;
-    deltaX.current = 0;
-
-    // threshold
-    if (dx > 40) prev();
-    else if (dx < -40) next();
-  };
-
-  // keyboard support (nice for desktop testing)
+function useReducedMotion() {
+  const [reduced, setReduced] = useState(false);
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft") prev();
-      if (e.key === "ArrowRight") next();
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active]);
+    const mq = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    if (!mq) return;
+    const onChange = () => setReduced(Boolean(mq.matches));
+    onChange();
+    mq.addEventListener?.("change", onChange);
+    return () => mq.removeEventListener?.("change", onChange);
+  }, []);
+  return reduced;
+}
 
-  const slide = useMemo(() => SLIDES[active], [active]);
+function PhoneFrame({
+  children,
+  caption,
+}: {
+  children: React.ReactNode;
+  caption?: React.ReactNode;
+}) {
+  return (
+    <div className="w-full">
+      {/* Phone shell */}
+      <div className="mx-auto w-full max-w-[360px]">
+        <div className="relative rounded-[42px] border border-white/15 bg-slate-950/70 shadow-[0_0_60px_rgba(56,189,248,0.18)] backdrop-blur">
+          {/* Bezel */}
+          <div className="relative m-[10px] rounded-[34px] border border-white/10 bg-black shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden">
+            {/* Notch / top bar */}
+            <div className="pointer-events-none absolute left-1/2 top-0 z-20 h-[30px] w-[56%] -translate-x-1/2 rounded-b-[22px] bg-black/90 border-x border-b border-white/10">
+              <div className="absolute left-1/2 top-[9px] h-[6px] w-[52px] -translate-x-1/2 rounded-full bg-white/10" />
+              <div className="absolute right-[18px] top-[9px] h-[10px] w-[10px] rounded-full bg-white/10" />
+            </div>
 
-  const checkoutHref = "/checkout"; // swap later to Shopify product URL, or keep internal routing
+            {/* Screen (fills the phone screen area) */}
+            <div className="relative z-10 min-h-[640px] w-full">
+              {children}
+            </div>
+
+            {/* subtle bottom home indicator */}
+            <div className="pointer-events-none absolute bottom-3 left-1/2 z-20 h-[5px] w-[120px] -translate-x-1/2 rounded-full bg-white/10" />
+          </div>
+        </div>
+      </div>
+
+      {caption ? <div className="mx-auto mt-3 max-w-[420px]">{caption}</div> : null}
+    </div>
+  );
+}
+
+function Dots({
+  count,
+  active,
+  onPick,
+}: {
+  count: number;
+  active: number;
+  onPick: (i: number) => void;
+}) {
+  return (
+    <div className="mt-3 flex items-center justify-center gap-2">
+      {Array.from({ length: count }).map((_, i) => {
+        const isOn = i === active;
+        return (
+          <button
+            key={i}
+            type="button"
+            onClick={() => onPick(i)}
+            aria-label={`Go to slide ${i + 1}`}
+            className={
+              "h-2.5 w-2.5 rounded-full border transition " +
+              (isOn
+                ? "border-sky-200/80 bg-sky-300 shadow-[0_0_18px_rgba(56,189,248,0.8)]"
+                : "border-white/20 bg-white/10 hover:bg-white/15")
+            }
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+export default function BuyPage() {
+  const router = useRouter();
+  const reducedMotion = useReducedMotion();
+
+  // Slides (swap placeholders for real screenshots later)
+  const slides: Slide[] = useMemo(
+    () => [
+      {
+        key: "dashboard",
+        title: "Daily Horoscope — tuned to the real sky",
+        subtitle:
+          "Your band opens your dashboard instantly. The reading updates daily using live sky positions.",
+        screen: (
+          <div className="h-full w-full">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(56,189,248,0.25),transparent_45%),radial-gradient(circle_at_70%_30%,rgba(250,204,21,0.18),transparent_50%),linear-gradient(to_bottom,rgba(2,6,23,0.9),rgba(2,6,23,0.65))]" />
+            <div className="relative z-10 p-6 pt-14">
+              <div className="text-[10px] uppercase tracking-[0.28em] text-slate-300">
+                NUMA Dashboard
+              </div>
+              <div className="mt-2 text-2xl font-semibold text-slate-50">
+                Today’s Alignment
+              </div>
+              <div className="mt-3 rounded-3xl border border-yellow-200/40 bg-slate-950/45 p-4 backdrop-blur">
+                <div className="text-[11px] uppercase tracking-[0.22em] text-yellow-100/90">
+                  Quiet Confidence
+                </div>
+                <div className="mt-2 text-sm leading-relaxed text-slate-100/90">
+                  A calm, deliberate day. Small choices compound. Stay steady.
+                </div>
+              </div>
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                {["Luck", "Energy", "Social"].map((x) => (
+                  <div
+                    key={x}
+                    className="rounded-2xl border border-white/10 bg-white/5 p-3"
+                  >
+                    <div className="text-[10px] uppercase tracking-[0.2em] text-slate-300">
+                      {x}
+                    </div>
+                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10">
+                      <div className="h-full w-[72%] rounded-full bg-sky-300/70" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: "stardust",
+        title: "Stardust Action — one move that shifts your day",
+        subtitle:
+          "A quick challenge that turns your horoscope into something you actually do.",
+        screen: (
+          <div className="h-full w-full">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(250,204,21,0.22),transparent_50%),radial-gradient(circle_at_80%_20%,rgba(99,102,241,0.22),transparent_55%),linear-gradient(to_bottom,rgba(2,6,23,0.92),rgba(2,6,23,0.65))]" />
+            <div className="relative z-10 p-6 pt-14">
+              <div className="text-[10px] uppercase tracking-[0.28em] text-slate-300">
+                Stardust Action
+              </div>
+              <div className="mt-2 text-2xl font-semibold text-slate-50">
+                Make One Move
+              </div>
+              <div className="mt-3 rounded-3xl border border-sky-200/35 bg-slate-950/45 p-4 backdrop-blur">
+                <div className="text-[11px] uppercase tracking-[0.22em] text-sky-100/90">
+                  Your Card
+                </div>
+                <div className="mt-2 text-sm leading-relaxed text-slate-100/90">
+                  Reach out to one person you’ve been thinking about — short and
+                  sincere.
+                </div>
+                <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-3 text-xs text-slate-200">
+                  “Momentum loves a small, honest start.”
+                </div>
+              </div>
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: "tapshare",
+        title: "Tap Share — connect fast, share only what you choose",
+        subtitle:
+          "Like a digital card, but controlled. Arm your band for one tap, then it turns off.",
+        screen: (
+          <div className="h-full w-full">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_35%,rgba(56,189,248,0.22),transparent_55%),radial-gradient(circle_at_75%_15%,rgba(16,185,129,0.18),transparent_55%),linear-gradient(to_bottom,rgba(2,6,23,0.92),rgba(2,6,23,0.65))]" />
+            <div className="relative z-10 p-6 pt-14">
+              <div className="text-[10px] uppercase tracking-[0.28em] text-slate-300">
+                Tap Share
+              </div>
+              <div className="mt-2 text-2xl font-semibold text-slate-50">
+                One Tap. Clean.
+              </div>
+              <div className="mt-3 rounded-3xl border border-yellow-200/35 bg-slate-950/45 p-4 backdrop-blur">
+                <div className="text-[11px] uppercase tracking-[0.22em] text-yellow-100/90">
+                  Selected
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  {["Phone", "Instagram", "TikTok", "Email"].map((x) => (
+                    <div
+                      key={x}
+                      className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-200"
+                    >
+                      {x}
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 rounded-2xl border border-sky-200/30 bg-slate-950/40 p-3 text-xs text-slate-200">
+                  Armed for next tap (60s)
+                </div>
+              </div>
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: "starsync",
+        title: "Star Sync — understand how you align with people",
+        subtitle:
+          "Quick insights for friendship dynamics, romantic connection, and work/ambition.",
+        screen: (
+          <div className="h-full w-full">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_15%,rgba(99,102,241,0.25),transparent_55%),radial-gradient(circle_at_80%_40%,rgba(250,204,21,0.16),transparent_55%),linear-gradient(to_bottom,rgba(2,6,23,0.92),rgba(2,6,23,0.65))]" />
+            <div className="relative z-10 p-6 pt-14">
+              <div className="text-[10px] uppercase tracking-[0.28em] text-slate-300">
+                Star Sync
+              </div>
+              <div className="mt-2 text-2xl font-semibold text-slate-50">
+                Compatibility
+              </div>
+              <div className="mt-3 rounded-3xl border border-sky-200/30 bg-slate-950/45 p-4 backdrop-blur">
+                <div className="text-xs text-slate-200">Overall</div>
+                <div className="mt-2 h-4 overflow-hidden rounded-full border border-white/10 bg-white/5">
+                  <div className="h-full w-[78%] rounded-full bg-gradient-to-r from-sky-300 via-cyan-300 to-emerald-300" />
+                </div>
+                <div className="mt-3 text-xs text-slate-100/90">
+                  Smooth momentum with a few pressure points — best when you keep
+                  it honest.
+                </div>
+              </div>
+            </div>
+          </div>
+        ),
+      },
+    ],
+    []
+  );
+
+  const [active, setActive] = useState(0);
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const startXRef = useRef<number | null>(null);
+  const draggingRef = useRef(false);
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    draggingRef.current = true;
+    startXRef.current = e.clientX;
+    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!draggingRef.current) return;
+    // We don't do "peek next card" — we only decide on release.
+  };
+
+  const onPointerUp = (e: React.PointerEvent) => {
+    if (!draggingRef.current) return;
+    draggingRef.current = false;
+
+    const startX = startXRef.current;
+    startXRef.current = null;
+
+    if (startX == null) return;
+
+    const dx = e.clientX - startX;
+    const threshold = 50;
+
+    if (dx > threshold) setActive((p) => clamp(p - 1, 0, slides.length - 1));
+    else if (dx < -threshold)
+      setActive((p) => clamp(p + 1, 0, slides.length - 1));
+  };
+
+  const goToCheckout = () => {
+    // Keep this routing to whatever you already wired (Shopify product page, etc.)
+    router.push("/buy/checkout");
+  };
 
   return (
     <div
@@ -101,355 +298,215 @@ export default function BuyPage() {
         backgroundRepeat: "no-repeat",
       }}
     >
-      {/* Dark veil */}
       <div className="pointer-events-none absolute inset-0 bg-slate-950/20" />
       <AnimatedSpaceBackground />
 
-      <main className="relative z-10 mx-auto flex min-h-screen max-w-3xl flex-col gap-6 px-4 py-7 sm:py-10">
-        {/* HERO */}
-        <section className="rounded-3xl border border-slate-700/50 bg-slate-950/55 p-5 backdrop-blur-xl shadow-[0_0_45px_rgba(0,0,0,0.85)]">
-          <p className="text-[11px] uppercase tracking-[0.25em] text-slate-300">
-            NUMA Bands
-          </p>
+      <main className="relative z-10 mx-auto flex min-h-screen max-w-4xl flex-col gap-6 px-4 py-6 sm:py-10">
+        {/* Top nav */}
+        <section className="flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="rounded-full border border-slate-600/70 bg-slate-950/80 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-900/80"
+          >
+            ← Back
+          </button>
 
-          <h1 className="mt-2 text-2xl font-semibold text-slate-50 sm:text-3xl">
-            Tap to open your day.
-          </h1>
+          <div className="flex-1 text-center sm:text-left">
+            <p className="text-[11px] uppercase tracking-[0.25em] text-slate-300">
+              NUMA Bands
+            </p>
+            <p className="mt-1 text-sm text-slate-100">
+              Tap-to-open your astrology dashboard + tap-to-share.
+            </p>
+          </div>
 
-          <p className="mt-2 text-sm text-slate-200/90">
-            Daily alignment based on the real sky — plus a band that shares and
-            syncs in the moment.
-          </p>
+          <div className="hidden w-16 sm:block" />
+        </section>
 
-          {/* Montage placeholder */}
-          <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-black/30">
-            <div className="relative aspect-[16/9] w-full">
-              <div className="absolute inset-0 opacity-70">
-                <div className="absolute -left-10 -top-10 h-40 w-40 rounded-full bg-sky-500/20 blur-3xl" />
-                <div className="absolute bottom-0 right-0 h-44 w-44 rounded-full bg-indigo-500/20 blur-3xl" />
+        {/* Hero montage */}
+        <section>
+          <div className="overflow-hidden rounded-3xl border border-sky-200/25 bg-slate-950/55 backdrop-blur-xl shadow-[0_0_55px_rgba(56,189,248,0.18)]">
+            <div className="relative">
+              {/* video placeholder */}
+              <div className="relative aspect-[16/9] w-full bg-black/50">
+                <video
+                  className="absolute inset-0 h-full w-full object-cover"
+                  src="/videos/numa-hero.mp4"
+                  autoPlay={!reducedMotion}
+                  muted
+                  loop
+                  playsInline
+                  preload="metadata"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6">
+                  <p className="text-[11px] uppercase tracking-[0.28em] text-sky-100/90">
+                    Tap. Align. Connect.
+                  </p>
+                  <h1 className="mt-2 text-2xl font-semibold text-slate-50 sm:text-3xl">
+                    Your future self doesn’t guess — they move with intention.
+                  </h1>
+                  <p className="mt-2 max-w-2xl text-sm text-slate-100/90">
+                    NUMA turns astrology into a daily ritual you actually use:
+                    real-sky horoscopes, one powerful action, and connection tools
+                    that feel effortless.
+                  </p>
+                </div>
               </div>
 
-              <div className="relative flex h-full w-full items-center justify-center">
-                <div className="text-center px-6">
-                  <div className="text-[11px] uppercase tracking-[0.22em] text-slate-300">
-                    Tap Montage (placeholder)
-                  </div>
-                  <div className="mt-1 text-sm text-slate-100/90">
-                    Replace with your looped tap compilation video.
-                  </div>
+              {/* Buy button under montage (top CTA) */}
+              <div className="p-4 sm:p-5">
+                <button
+                  type="button"
+                  onClick={goToCheckout}
+                  className="w-full rounded-2xl border border-yellow-200/80 bg-gradient-to-r from-yellow-400/95 via-amber-300/95 to-yellow-200/95 px-4 py-3 text-sm font-semibold text-slate-950 shadow-[0_0_30px_rgba(250,204,21,0.55)] hover:brightness-110"
+                >
+                  Get a NUMA Band
+                </button>
+
+                {/* small feature chips */}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {["No batteries required", "Waterproof", "Durable"].map((t) => (
+                    <span
+                      key={t}
+                      className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] text-slate-200"
+                    >
+                      {t}
+                    </span>
+                  ))}
                 </div>
               </div>
             </div>
           </div>
-
-          {/* Buy button under montage */}
-          <a
-            href={checkoutHref}
-            className="mt-4 flex w-full items-center justify-center rounded-2xl border border-yellow-200/70 bg-gradient-to-r from-yellow-400/95 via-amber-300/95 to-yellow-200/95 px-4 py-3 text-sm font-semibold text-slate-950 shadow-[0_0_30px_rgba(250,204,21,0.55)] hover:brightness-110"
-          >
-            Get a NUMA Band
-          </a>
-
-          <div className="mt-3 grid grid-cols-1 gap-2 text-[11px] text-slate-300 sm:grid-cols-3">
-            <div className="rounded-2xl border border-white/10 bg-slate-950/40 px-3 py-2">
-              No batteries required
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-slate-950/40 px-3 py-2">
-              Waterproof
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-slate-950/40 px-3 py-2">
-              Durable for daily wear
-            </div>
-          </div>
         </section>
 
-        {/* SWIPE / IPHONE FRAME SECTION */}
-        <section className="rounded-3xl border border-sky-200/35 bg-slate-950/60 p-5 backdrop-blur-xl shadow-[0_0_45px_rgba(15,23,42,0.9)]">
-          <div className="flex items-end justify-between gap-3">
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.22em] text-sky-200/90">
+        {/* Swipe explore */}
+        <section>
+          <div className="rounded-3xl border border-slate-600/50 bg-slate-950/55 p-4 sm:p-6 backdrop-blur-xl shadow-[0_0_45px_rgba(0,0,0,0.8)]">
+            <div className="space-y-2">
+              <p className="text-[11px] uppercase tracking-[0.22em] text-slate-300">
                 Swipe to explore
               </p>
-              <p className="mt-1 text-xs text-slate-200/90">
-                See what opens when you tap your band.
+              <p className="text-sm text-slate-100">
+                What opens when you tap your band.
               </p>
             </div>
 
-            <div className="hidden sm:flex items-center gap-2">
-              <button
-                type="button"
-                onClick={prev}
-                className="rounded-full border border-white/15 bg-slate-950/60 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-900/70"
+            <div className="mt-5">
+              <div
+                ref={trackRef}
+                onPointerDown={onPointerDown}
+                onPointerMove={onPointerMove}
+                onPointerUp={onPointerUp}
+                className="select-none touch-pan-y"
               >
-                ←
-              </button>
-              <button
-                type="button"
-                onClick={next}
-                className="rounded-full border border-white/15 bg-slate-950/60 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-900/70"
-              >
-                →
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-4 flex flex-col items-center">
-            {/* iPhone frame */}
-            <div
-              className="iphone-shell"
-              onTouchStart={onTouchStart}
-              onTouchMove={onTouchMove}
-              onTouchEnd={onTouchEnd}
-              role="group"
-              aria-label="NUMA feature carousel"
-            >
-              {/* subtle outer glow */}
-              <div className="iphone-glow" />
-
-              {/* bezel */}
-              <div className="iphone-bezel">
-                {/* top bar / camera */}
-                <div className="iphone-top">
-                  <div className="iphone-speaker" />
-                  <div className="iphone-camera" />
-                </div>
-
-                {/* screen */}
-                <div className="iphone-screen">
-                  {/* Screen content placeholder */}
-                  <div className="screen-content">
-                    <div className="screen-badge">
-                      {active + 1}/{SLIDES.length}
+                <PhoneFrame
+                  caption={
+                    <div className="mt-4 space-y-2 text-center">
+                      <div className="text-base font-semibold text-slate-50">
+                        {slides[active].title}
+                      </div>
+                      <div className="text-sm text-slate-200/90">
+                        {slides[active].subtitle}
+                      </div>
                     </div>
-
-                    <div className="screen-title">{slide.title}</div>
-                    <div className="screen-subtitle">{slide.subtitle}</div>
-
-                    <div className="screen-mock">
-                      <div className="mock-row" />
-                      <div className="mock-row" />
-                      <div className="mock-row short" />
-                      <div className="mock-card" />
+                  }
+                >
+                  {/* Slide viewport */}
+                  <div className="relative h-full w-full overflow-hidden">
+                    <div
+                      className={
+                        "flex h-full w-full transition-transform duration-300 ease-out " +
+                        (reducedMotion ? "" : "")
+                      }
+                      style={{
+                        transform: `translateX(-${active * 100}%)`,
+                      }}
+                    >
+                      {slides.map((s) => (
+                        <div key={s.key} className="relative h-full w-full shrink-0">
+                          {s.screen}
+                        </div>
+                      ))}
                     </div>
                   </div>
-                </div>
+                </PhoneFrame>
               </div>
-            </div>
 
-            {/* DOTS: directly under phone (as you requested) */}
-            <div className="mt-3 flex items-center justify-center gap-2">
-              {SLIDES.map((s, i) => {
-                const isActive = i === active;
-                return (
-                  <button
-                    key={s.key}
-                    type="button"
-                    aria-label={`Go to slide ${i + 1}`}
-                    onClick={() => goTo(i)}
-                    className={
-                      "h-2.5 w-2.5 rounded-full border transition " +
-                      (isActive
-                        ? "border-sky-200 bg-sky-200 shadow-[0_0_14px_rgba(56,189,248,0.7)]"
-                        : "border-slate-500 bg-slate-700/40 hover:border-slate-300")
-                    }
-                  />
-                );
-              })}
-            </div>
+              {/* Dots directly below phone */}
+              <Dots count={slides.length} active={active} onPick={setActive} />
 
-            <div className="mt-2 text-[11px] text-slate-300">
-              Swipe left/right to explore
+              {/* Future-self blurb under swipe */}
+              <div className="mx-auto mt-5 max-w-2xl rounded-3xl border border-sky-200/15 bg-white/5 p-4 text-center">
+                <p className="text-[11px] uppercase tracking-[0.22em] text-sky-100/80">
+                  Build the version of you that follows through
+                </p>
+                <p className="mt-2 text-sm text-slate-100/90">
+                  NUMA is a tiny daily anchor: you tap, you get clarity, you take
+                  one action, and you stay aligned long enough to change your
+                  outcomes.
+                </p>
+                <p className="mt-2 text-[13px] font-semibold text-slate-50">
+                  Less drifting. More direction.
+                </p>
+                <p className="mt-1 text-sm text-slate-200/85">
+                  A wearable ritual that makes “I’ll do it tomorrow” feel
+                  outdated.
+                </p>
+              </div>
             </div>
           </div>
         </section>
 
-        {/* BOTTOM BUY BUTTON */}
-        <section className="pb-6">
-          <a
-            href={checkoutHref}
-            className="flex w-full items-center justify-center rounded-2xl border border-yellow-200/70 bg-gradient-to-r from-yellow-400/95 via-amber-300/95 to-yellow-200/95 px-4 py-3 text-sm font-semibold text-slate-950 shadow-[0_0_30px_rgba(250,204,21,0.55)] hover:brightness-110"
-          >
-            Get a NUMA Band
-          </a>
-          <p className="mt-3 text-center text-[11px] text-slate-300">
-            Limited first drop — more designs and creator collabs coming soon.
-          </p>
+        {/* Bottom CTA with floating band image above button */}
+        <section className="pb-6 sm:pb-10">
+          <div className="relative rounded-3xl border border-yellow-200/25 bg-slate-950/60 p-5 sm:p-7 backdrop-blur-xl shadow-[0_0_60px_rgba(250,204,21,0.10)] overflow-hidden">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_10%,rgba(250,204,21,0.12),transparent_55%),radial-gradient(circle_at_70%_40%,rgba(56,189,248,0.12),transparent_60%)]" />
+
+            <div className="relative z-10 text-center">
+              <p className="text-[11px] uppercase tracking-[0.26em] text-yellow-100/85">
+                Ready to tap in
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-50">
+                Get your NUMA Band
+              </h2>
+              <p className="mx-auto mt-2 max-w-xl text-sm text-slate-100/90">
+                Daily real-sky horoscope. Stardust Action. Tap Share. Star Sync.
+                One band — four rituals.
+              </p>
+
+              {/* Floating band image */}
+              <div className="relative mx-auto mt-7 w-full max-w-[460px]">
+                <div className="pointer-events-none absolute left-1/2 top-10 h-20 w-64 -translate-x-1/2 rounded-full bg-yellow-300/10 blur-2xl" />
+
+                <div className="pointer-events-none mx-auto mb-4 flex justify-center">
+                  <Image
+                    src="/images/numa-band.png"
+                    alt="NUMA Band"
+                    width={520}
+                    height={220}
+                    priority={false}
+                    className="h-auto w-[92%] max-w-[520px] drop-shadow-[0_30px_60px_rgba(0,0,0,0.55)]"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={goToCheckout}
+                  className="w-full rounded-2xl border border-yellow-200/80 bg-gradient-to-r from-yellow-400/95 via-amber-300/95 to-yellow-200/95 px-4 py-3 text-sm font-semibold text-slate-950 shadow-[0_0_34px_rgba(250,204,21,0.60)] hover:brightness-110"
+                >
+                  Get a NUMA Band
+                </button>
+
+                <p className="mt-3 text-[11px] text-slate-300">
+                  Secure, intentional sharing. Built for daily alignment.
+                </p>
+              </div>
+            </div>
+          </div>
         </section>
       </main>
-
-      {/* styles */}
-      <style jsx global>{`
-        /* ---------- iPhone frame ---------- */
-        .iphone-shell {
-          position: relative;
-          width: min(340px, 92vw);
-          aspect-ratio: 9 / 19.5;
-          border-radius: 44px;
-          padding: 10px;
-          touch-action: pan-y;
-        }
-
-        .iphone-glow {
-          position: absolute;
-          inset: -14px;
-          border-radius: 58px;
-          background: radial-gradient(
-            circle at 40% 20%,
-            rgba(56, 189, 248, 0.22),
-            transparent 55%
-          );
-          filter: blur(10px);
-          pointer-events: none;
-        }
-
-        .iphone-bezel {
-          position: relative;
-          height: 100%;
-          width: 100%;
-          border-radius: 38px;
-          background: linear-gradient(
-            180deg,
-            rgba(30, 41, 59, 0.9),
-            rgba(2, 6, 23, 0.95)
-          );
-          border: 1px solid rgba(255, 255, 255, 0.14);
-          box-shadow: 0 25px 70px rgba(0, 0, 0, 0.75);
-          overflow: hidden;
-        }
-
-        /* subtle glass highlight */
-        .iphone-bezel:before {
-          content: "";
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(
-            120deg,
-            rgba(255, 255, 255, 0.08),
-            transparent 30%,
-            transparent 70%,
-            rgba(255, 255, 255, 0.05)
-          );
-          pointer-events: none;
-        }
-
-        .iphone-top {
-          position: absolute;
-          top: 10px;
-          left: 50%;
-          transform: translateX(-50%);
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          z-index: 3;
-          padding: 6px 12px;
-          border-radius: 999px;
-          background: rgba(2, 6, 23, 0.55);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          backdrop-filter: blur(8px);
-        }
-
-        .iphone-speaker {
-          width: 44px;
-          height: 6px;
-          border-radius: 999px;
-          background: rgba(226, 232, 240, 0.22);
-          box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.6);
-        }
-
-        .iphone-camera {
-          width: 10px;
-          height: 10px;
-          border-radius: 999px;
-          background: radial-gradient(
-            circle at 30% 30%,
-            rgba(56, 189, 248, 0.55),
-            rgba(15, 23, 42, 0.95) 70%
-          );
-          border: 1px solid rgba(255, 255, 255, 0.12);
-          box-shadow: 0 0 14px rgba(56, 189, 248, 0.25);
-        }
-
-        .iphone-screen {
-          position: absolute;
-          inset: 14px;
-          border-radius: 30px;
-          overflow: hidden;
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          background: rgba(0, 0, 0, 0.22);
-        }
-
-        .screen-content {
-          height: 100%;
-          width: 100%;
-          padding: 18px 16px 16px;
-          display: flex;
-          flex-direction: column;
-          justify-content: flex-end;
-          gap: 10px;
-          background: radial-gradient(
-              circle at 40% 15%,
-              rgba(56, 189, 248, 0.14),
-              transparent 55%
-            ),
-            radial-gradient(
-              circle at 80% 80%,
-              rgba(99, 102, 241, 0.12),
-              transparent 55%
-            );
-        }
-
-        .screen-badge {
-          position: absolute;
-          top: 18px;
-          right: 18px;
-          font-size: 11px;
-          color: rgba(226, 232, 240, 0.9);
-          padding: 6px 10px;
-          border-radius: 999px;
-          background: rgba(2, 6, 23, 0.55);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          backdrop-filter: blur(10px);
-        }
-
-        .screen-title {
-          font-size: 15px;
-          font-weight: 700;
-          line-height: 1.15;
-          color: rgba(248, 250, 252, 0.98);
-          text-shadow: 0 0 18px rgba(56, 189, 248, 0.12);
-        }
-
-        .screen-subtitle {
-          font-size: 12px;
-          line-height: 1.35;
-          color: rgba(226, 232, 240, 0.85);
-        }
-
-        .screen-mock {
-          margin-top: 10px;
-          display: grid;
-          gap: 10px;
-        }
-
-        .mock-row {
-          height: 10px;
-          border-radius: 999px;
-          background: rgba(226, 232, 240, 0.12);
-          border: 1px solid rgba(255, 255, 255, 0.06);
-        }
-
-        .mock-row.short {
-          width: 60%;
-        }
-
-        .mock-card {
-          height: 130px;
-          border-radius: 18px;
-          background: rgba(2, 6, 23, 0.5);
-          border: 1px solid rgba(56, 189, 248, 0.18);
-          box-shadow: 0 0 24px rgba(56, 189, 248, 0.12);
-        }
-      `}</style>
     </div>
   );
 }
