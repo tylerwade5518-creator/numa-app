@@ -821,11 +821,7 @@ function DashboardInner() {
                   )}
                 </div>
 
-                <div className="flex h-full items-center">
-                  <span className="text-xs text-slate-200/80 group-hover:text-sky-100">
-                    ▶
-                  </span>
-                </div>
+                
               </div>
             </button>
           </section>

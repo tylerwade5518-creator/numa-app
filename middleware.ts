@@ -5,45 +5,30 @@ import { createSupabaseServer } from "./lib/supabase/server";
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
 
+  // Only runs on protected routes because of matcher below
   const supabase = createSupabaseServer(req, res);
+
+  // Faster than getUser() for route gating
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
 
-  const pathname = req.nextUrl.pathname;
-
-  // Routes that should be accessible without being logged in
-  const isAuthRoute =
-    pathname.startsWith("/login") ||
-    pathname.startsWith("/signup") ||
-    pathname.startsWith("/auth/callback");
-
-  // Routes that require login
-  const isProtectedRoute =
-    pathname.startsWith("/dashboard") ||
-    pathname.startsWith("/settings") ||
-    pathname.startsWith("/star-sync") ||
-    pathname.startsWith("/setup");
-
-  // If not logged in and trying to access protected routes -> send to login
-  if (!user && isProtectedRoute) {
+  if (!session) {
     const redirectUrl = req.nextUrl.clone();
     redirectUrl.pathname = "/login";
-    redirectUrl.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(redirectUrl);
-  }
-
-  // If logged in and trying to access login/signup -> go to dashboard
-  if (user && isAuthRoute && (pathname.startsWith("/login") || pathname.startsWith("/signup"))) {
-    const redirectUrl = req.nextUrl.clone();
-    redirectUrl.pathname = "/dashboard";
-    redirectUrl.search = "";
+    redirectUrl.searchParams.set("redirect", req.nextUrl.pathname);
     return NextResponse.redirect(redirectUrl);
   }
 
   return res;
 }
 
+// IMPORTANT: Restrict middleware to protected routes only (big speed win)
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  matcher: [
+    "/dashboard/:path*",
+    "/settings/:path*",
+    "/star-sync/:path*",
+    "/setup/:path*",
+  ],
 };
