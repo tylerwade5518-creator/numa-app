@@ -1,7 +1,7 @@
 // app/dashboard/page.tsx
 "use client";
 
-import React, { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import AnimatedSpaceBackground from "./AnimatedSpaceBackground";
@@ -9,6 +9,9 @@ import AnimatedSpaceBackground from "./AnimatedSpaceBackground";
 /** Stardust Action Card registry + pinned renderer */
 import { CARD_REGISTRY, type CardId } from "../../lib/cardRegistry";
 import { PinnedCard } from "../components/PinnedCard";
+
+/** Video ring meters */
+import VideoRingMeter from "./VideoRingMeter";
 
 /* -------------------------------
    Supabase client (client-side)
@@ -96,7 +99,6 @@ function TapShareSheet({
 }: TapShareSheetProps) {
   const isFieldSelected = (field: TapShareField) => selectedFields.has(field);
 
-  // Show in a clean, intentional order
   const orderedFields: TapShareField[] = [
     "phone",
     "email",
@@ -393,6 +395,11 @@ function DashboardInner() {
   const horoscopeSummary =
     "Today favors calm, deliberate moves instead of big dramatic swings. Keep your plans simple, follow through once, and let your quiet consistency stand out on its own.";
 
+  // Example meter values (swap later with real values)
+  const energyLevel = 0.86;
+  const focusLevel = 0.62;
+  const connectionLevel = 0.48;
+
   const todayKey = useMemo(() => getLocalDayKey(), []);
 
   /* Stardust */
@@ -401,15 +408,12 @@ function DashboardInner() {
   const [stardustTagline, setStardustTagline] = useState<string | null>(null);
   const [pinnedCardSlug, setPinnedCardSlug] = useState<CardId | null>(null);
 
-  /* Sky Scan overlay */
-  const [showSkyScan, setShowSkyScan] = useState(false);
-  const [scanPhase, setScanPhase] = useState<
-    "calibrating" | "mapping" | "comparing" | "revealing"
-  >("calibrating");
+  /* In-dashboard analysis flow */
+  const [analysisStep, setAnalysisStep] = useState<
+    "idle" | "horoscope" | "meters" | "sky" | "reveal"
+  >("idle");
 
-  const skyScanVideoRef = useRef<HTMLVideoElement | null>(null);
-  const SKYSCAN_SPEED = 0.5;
-  const SKYSCAN_TIME_SCALE = 2;
+  const analyzing = analysisStep !== "idle";
 
   useEffect(() => {
     try {
@@ -438,45 +442,17 @@ function DashboardInner() {
     localStorage.setItem(STARDUST_STORAGE_KEY, JSON.stringify(payload));
   };
 
-  const handleStardustClick = () => {
+  const startAnalysisFlow = () => {
     if (hasScannedToday) return;
-    setShowSkyScan(true);
-    setScanPhase("calibrating");
-  };
+    if (analysisStep !== "idle") return;
 
-  useEffect(() => {
-    if (!showSkyScan) return;
+    setAnalysisStep("horoscope");
 
-    const v = skyScanVideoRef.current;
-    if (v) {
-      try {
-        v.pause();
-        v.currentTime = 0;
-      } catch {}
-      try {
-        v.playbackRate = SKYSCAN_SPEED;
-      } catch {}
-      setTimeout(() => {
-        v.play().catch(() => {});
-      }, 60);
-    }
-
-    const t1 = setTimeout(
-      () => setScanPhase("mapping"),
-      Math.round(700 * SKYSCAN_TIME_SCALE)
-    );
-    const t2 = setTimeout(
-      () => setScanPhase("comparing"),
-      Math.round(1400 * SKYSCAN_TIME_SCALE)
-    );
-    const t3 = setTimeout(
-      () => setScanPhase("revealing"),
-      Math.round(2000 * SKYSCAN_TIME_SCALE)
-    );
+    const t1 = setTimeout(() => setAnalysisStep("meters"), 850);
+    const t2 = setTimeout(() => setAnalysisStep("sky"), 1700);
+    const t3 = setTimeout(() => setAnalysisStep("reveal"), 2550);
 
     const tDone = setTimeout(() => {
-      setShowSkyScan(false);
-
       const ids = Object.keys(CARD_REGISTRY) as CardId[];
       const chosen = ids[Math.floor(Math.random() * ids.length)];
       const picked = CARD_REGISTRY[chosen] as any;
@@ -495,7 +471,9 @@ function DashboardInner() {
         stardustTagline:
           picked?.StardustAction ?? "Your Stardust Action is set.",
       });
-    }, Math.round(2400 * SKYSCAN_TIME_SCALE));
+
+      setAnalysisStep("idle");
+    }, 3350);
 
     return () => {
       clearTimeout(t1);
@@ -503,16 +481,18 @@ function DashboardInner() {
       clearTimeout(t3);
       clearTimeout(tDone);
     };
-  }, [showSkyScan, todayKey]);
+  };
 
-  const scanLabel =
-    scanPhase === "calibrating"
-      ? "Calibrating sensors…"
-      : scanPhase === "mapping"
-      ? "Mapping live sky positions…"
-      : scanPhase === "comparing"
-      ? "Comparing to your sign…"
-      : "Revealing your Stardust Action…";
+  const analysisLabel =
+    analysisStep === "horoscope"
+      ? "Analyzing horoscope…"
+      : analysisStep === "meters"
+      ? "Analyzing daily meters…"
+      : analysisStep === "sky"
+      ? "Analyzing current sky…"
+      : analysisStep === "reveal"
+      ? "Selecting your card…"
+      : "";
 
   /* -------------------------------
      Tap Share state + Supabase sync
@@ -592,7 +572,6 @@ function DashboardInner() {
     setSelectedProfile("none");
   };
 
-  // Arm -> immediately show Armed countdown overlay. No middle popup.
   const armAndSync = async () => {
     setSyncError(null);
     setSyncStatus("syncing");
@@ -600,7 +579,6 @@ function DashboardInner() {
     try {
       const armedUntil = new Date(Date.now() + 60 * 1000);
 
-      // UI first: go straight to countdown overlay
       setIsArmed(true);
       setSecondsRemaining(60);
 
@@ -621,7 +599,6 @@ function DashboardInner() {
     }
   };
 
-  // Turn off silently (no popups)
   const turnOffAndSyncSilent = async () => {
     setSyncError(null);
     setSyncStatus("syncing");
@@ -655,7 +632,6 @@ function DashboardInner() {
     await turnOffAndSyncSilent();
   };
 
-  // countdown timer
   useEffect(() => {
     if (!isArmed) return;
 
@@ -742,7 +718,7 @@ function DashboardInner() {
                     Today’s Alignment
                   </p>
                   <p className="text-xs sm:text-[13px] text-slate-100/90">
-                    Calibrated to your band and sign for today.
+                  
                   </p>
                 </div>
 
@@ -750,18 +726,90 @@ function DashboardInner() {
                   <h2 className="text-xl sm:text-2xl font-semibold text-slate-50">
                     {horoscopeTitle}
                   </h2>
-                  <p className="text-[15px] sm:text-base leading-relaxed text-slate-100/90">
+                  <p className="text-base sm:text-lg leading-relaxed text-slate-100/95">
                     {horoscopeSummary}
                   </p>
                 </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-3">
-                  <p className="text-[11px] text-slate-100/80">
+                  <p className="text-[12px] text-slate-100/80">
                     Based on today’s real sky positions.
                   </p>
-                  <p className="text-[11px] text-slate-300/80">
+                  <p className="text-[12px] text-slate-300/80">
                     Tap your band any time today to reopen this reading.
                   </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* METERS */}
+          <section>
+            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-slate-950/35 p-4 sm:p-6 backdrop-blur-md shadow-[0_0_40px_rgba(0,0,0,0.75)]">
+              <div className="pointer-events-none absolute inset-0 opacity-60 mix-blend-screen">
+                <div className="absolute -left-16 -top-16 h-44 w-44 rounded-full bg-sky-500/12 blur-3xl" />
+                <div className="absolute -right-20 bottom-0 h-56 w-56 rounded-full bg-indigo-500/10 blur-3xl" />
+              </div>
+
+              <div className="relative">
+                <div className="mb-4">
+                  <p className="metersTitle">Daily Meters</p>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3 sm:gap-6">
+                  {/* ENERGY */}
+                  <div className="flex flex-col items-center text-center">
+                    <div className="mb-2">
+                      <div className="meterHead">ENERGY</div>
+                      <div className="mt-0.5 text-[11px] text-slate-400/90">
+                        Capacity to act
+                      </div>
+                    </div>
+
+                    <VideoRingMeter
+                      progress={energyLevel}
+                      directive="Make moves"
+                      tickCount={10}
+                      videoSrc="/textures/solar-flare-animated.mp4"
+                      videoHueRotateDeg={0}
+                    />
+                  </div>
+
+                  {/* FOCUS */}
+                  <div className="flex flex-col items-center text-center">
+                    <div className="mb-2">
+                      <div className="meterHead">FOCUS</div>
+                      <div className="mt-0.5 text-[11px] text-slate-400/90">
+                        Precision attention
+                      </div>
+                    </div>
+
+                    <VideoRingMeter
+                      progress={focusLevel}
+                      directive="Lock in"
+                      tickCount={10}
+                      videoSrc="/textures/solar-flare-animated.mp4"
+                      videoHueRotateDeg={210}
+                    />
+                  </div>
+
+                  {/* CONNECTION */}
+                  <div className="flex flex-col items-center text-center">
+                    <div className="mb-2">
+                      <div className="meterHead">CONNECTION</div>
+                      <div className="mt-0.5 text-[11px] text-slate-400/90">
+                        Social resonance
+                      </div>
+                    </div>
+
+                    <VideoRingMeter
+                      progress={connectionLevel}
+                      directive="Reach out"
+                      tickCount={10}
+                      videoSrc="/textures/solar-flare-animated.mp4"
+                      videoHueRotateDeg={305}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -771,8 +819,14 @@ function DashboardInner() {
           <section>
             <button
               type="button"
-              onClick={handleStardustClick}
-              className="group relative w-full overflow-hidden rounded-3xl border border-sky-200/60 bg-gradient-to-br from-slate-950/90 via-slate-950/80 to-slate-950/90 p-4 sm:p-5 text-left shadow-[0_0_40px_rgba(15,23,42,0.9)] transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_0_55px_rgba(56,189,248,0.55)]"
+              onClick={startAnalysisFlow}
+              disabled={hasScannedToday || analyzing}
+              className={
+                "group relative w-full overflow-hidden rounded-3xl border border-sky-200/60 bg-gradient-to-br from-slate-950/90 via-slate-950/80 to-slate-950/90 p-4 sm:p-5 text-left shadow-[0_0_40px_rgba(15,23,42,0.9)] transition-transform duration-200 " +
+                (hasScannedToday || analyzing
+                  ? "opacity-95"
+                  : "hover:-translate-y-0.5 hover:shadow-[0_0_55px_rgba(56,189,248,0.55)]")
+              }
             >
               <div className="pointer-events-none absolute inset-0 opacity-60 mix-blend-screen group-hover:opacity-90">
                 <div className="absolute -left-10 -top-10 h-32 w-32 rounded-full bg-sky-500/25 blur-3xl" />
@@ -796,12 +850,19 @@ function DashboardInner() {
                         Discover Your Stardust
                       </p>
                       <p className="text-sm font-semibold text-slate-50 sm:text-[15px]">
-                        Run today’s Sky Scan to reveal your Cosmic Card and
-                        Stardust Action.
+                        {analyzing
+                          ? "Calibrating your reading…"
+                          : "Run today’s scan to reveal your Cosmic Card and Stardust Action."}
                       </p>
                       <p className="text-[11px] text-slate-300/90">
-                        Powered by real-time moon and planet positions for your
-                        sign.
+                        {analyzing ? (
+                          <span className="inline-flex items-center gap-2">
+                            <span className="scanDot" />
+                            {analysisLabel}
+                          </span>
+                        ) : (
+                          "Powered by real-time moon and planet positions for your sign."
+                        )}
                       </p>
                     </>
                   ) : (
@@ -810,8 +871,7 @@ function DashboardInner() {
                         Today’s Stardust
                       </p>
                       <p className="text-sm font-semibold text-slate-50 sm:text-[15px]">
-                        {stardustCardName ??
-                          "Your Cosmic Card is set for today."}
+                        {stardustCardName ?? "Your Cosmic Card is set for today."}
                       </p>
                       <p className="text-[11px] text-slate-300/90">
                         {stardustTagline ??
@@ -820,8 +880,6 @@ function DashboardInner() {
                     </>
                   )}
                 </div>
-
-                
               </div>
             </button>
           </section>
@@ -980,85 +1038,46 @@ function DashboardInner() {
           }
         }
 
-        /* Settings overlay */
-        .settings-overlay {
-          position: fixed;
-          inset: 0;
-          z-index: 45;
-          display: flex;
-          align-items: flex-end;
-          justify-content: center;
+        .scanDot {
+          width: 7px;
+          height: 7px;
+          border-radius: 9999px;
+          background: rgba(56, 189, 248, 0.95);
+          box-shadow: 0 0 16px rgba(56, 189, 248, 0.75);
+          display: inline-block;
+          animation: scanDotPulse 0.9s ease-in-out infinite;
         }
 
-        .settings-backdrop {
-          position: absolute;
-          inset: 0;
-          background: rgba(0, 0, 0, 0.55);
-          backdrop-filter: blur(6px);
-        }
-
-        .settings-sheet {
-          position: relative;
-          z-index: 50;
-          width: 100%;
-          max-width: 24rem;
-          margin-bottom: env(safe-area-inset-bottom, 0);
-          border-radius: 1.25rem 1.25rem 0 0;
-          border: 1px solid rgba(148, 163, 184, 0.6);
-          background: rgba(15, 23, 42, 0.97);
-          padding: 1rem 1.25rem 1.25rem;
-          box-shadow: 0 -18px 45px rgba(0, 0, 0, 0.9);
-          animation: sheetEnter 0.25s ease-out;
-        }
-
-        /* Sky Scan overlay */
-        .skyscan-overlay {
-          position: fixed;
-          inset: 0;
-          z-index: 60;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .skyscan-backdrop {
-          position: absolute;
-          inset: 0;
-          background: rgba(0, 0, 0, 0.65);
-          backdrop-filter: blur(10px);
-        }
-
-        .skyscan-card {
-          position: relative;
-          z-index: 61;
-          width: 92%;
-          max-width: 24rem;
-          border-radius: 1.5rem;
-          border: 1px solid rgba(226, 232, 240, 0.12);
-          background: rgba(2, 6, 23, 0.72);
-          padding: 1rem 1.1rem 1.1rem;
-          box-shadow: 0 0 70px rgba(56, 189, 248, 0.18);
-        }
-
-        .scanline {
-          animation: scanMove 1.15s ease-in-out infinite;
-        }
-
-        @keyframes scanMove {
+        @keyframes scanDotPulse {
           0% {
-            transform: translateY(-40px);
-            opacity: 0;
+            transform: scale(0.85);
+            opacity: 0.55;
           }
-          20% {
-            opacity: 1;
-          }
-          60% {
+          50% {
+            transform: scale(1.2);
             opacity: 1;
           }
           100% {
-            transform: translateY(210px);
-            opacity: 0;
+            transform: scale(0.85);
+            opacity: 0.55;
           }
+        }
+
+        /* NEW: meters typography tuning */
+        .metersTitle {
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+          color: rgba(226, 232, 240, 0.92);
+        }
+
+        .meterHead {
+          font-size: 11px;
+          font-weight: 650; /* slightly bolder than the rest */
+          letter-spacing: 0.24em;
+          text-transform: uppercase;
+          color: rgba(226, 232, 240, 0.88);
         }
       `}</style>
 
@@ -1140,71 +1159,6 @@ function DashboardInner() {
                   Choose which widgets appear when you tap your band.
                 </span>
               </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Sky Scan overlay */}
-      {showSkyScan && (
-        <div className="skyscan-overlay">
-          <div
-            className="skyscan-backdrop"
-            onClick={() => setShowSkyScan(false)}
-          />
-          <div className="skyscan-card">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="text-[11px] uppercase tracking-[0.22em] text-sky-200/80">
-                  Sky Scan
-                </div>
-                <div className="mt-1 text-sm font-semibold text-slate-50">
-                  Analyzing today’s sky for your personal Stardust Action
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setShowSkyScan(false)}
-                className="rounded-full border border-white/15 bg-slate-900/70 px-2 py-1 text-[11px] text-slate-200 hover:bg-slate-800/80"
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="relative mt-5 h-44 overflow-hidden rounded-2xl border border-white/10 bg-black/30">
-              <div className="pointer-events-none absolute inset-0 opacity-70">
-                <div className="absolute -left-10 -top-10 h-32 w-32 rounded-full bg-sky-500/25 blur-3xl" />
-                <div className="absolute bottom-0 right-0 h-40 w-40 rounded-full bg-indigo-500/25 blur-3xl" />
-              </div>
-
-              <video
-                ref={skyScanVideoRef}
-                src="/videos/skyscan.mp4"
-                autoPlay
-                muted
-                playsInline
-                preload="auto"
-                className="absolute inset-0 h-full w-full object-cover"
-                onError={(e) => {
-                  // @ts-ignore
-                  console.error(
-                    "SkyScan overlay video error:",
-                    e?.currentTarget?.error
-                  );
-                }}
-              />
-
-              <div className="scanline absolute left-0 top-0 h-16 w-full bg-gradient-to-b from-sky-300/20 via-sky-300/10 to-transparent" />
-            </div>
-
-            <div className="mt-4 flex items-center justify-between gap-3">
-              <div className="text-xs text-slate-200">{scanLabel}</div>
-              <div className="flex items-center gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-sky-300/90" />
-                <span className="h-1.5 w-1.5 rounded-full bg-sky-300/60" />
-                <span className="h-1.5 w-1.5 rounded-full bg-sky-300/35" />
-              </div>
             </div>
           </div>
         </div>
