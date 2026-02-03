@@ -73,6 +73,95 @@ const TAP_SHARE_FIELD_LABELS: Record<TapShareField, string> = {
 type TapShareProfile = "none" | "social" | "business";
 
 /* -------------------------------
+   Planet Orb Button (animated video)
+   ------------------------------- */
+
+function PlanetOrbButton(props: {
+  labelTop: string; // e.g. "TAP"
+  labelBottom: string; // e.g. "SHARE"
+  onClick: () => void;
+  disabled?: boolean;
+  title?: string;
+  /** 0 = warm original; adjust per button */
+  hueRotateDeg?: number;
+  /** fine tuning per button */
+  saturate?: number;
+  brightness?: number;
+  contrast?: number;
+  /** glow tint; CSS rgba string */
+  glowRGBA?: string;
+  /** video src must be in /public */
+  videoSrc?: string;
+}) {
+  const {
+    labelTop,
+    labelBottom,
+    onClick,
+    disabled,
+    title,
+    hueRotateDeg = 0,
+    saturate = 1.15,
+    brightness = 1.05,
+    contrast = 1.1,
+    glowRGBA = "rgba(250,204,21,0.55)",
+    videoSrc = "/textures/planet-buttons.mp4",
+  } = props;
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      aria-label={`${labelTop} ${labelBottom}`}
+      className={
+        "planetOrb relative mt-1 flex h-24 w-24 items-center justify-center rounded-full text-center transition " +
+        (disabled ? "cursor-not-allowed opacity-55" : "hover:brightness-110")
+      }
+      style={
+        {
+          // Provide per-instance glow color to CSS via custom property
+          ["--orbGlow" as any]: glowRGBA,
+        } as React.CSSProperties
+      }
+    >
+      {/* Video planet surface */}
+      <div className="absolute inset-0 overflow-hidden rounded-full">
+        <video
+          className="absolute inset-0 h-full w-full object-cover"
+          src={videoSrc}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+          style={{
+            filter: `hue-rotate(${hueRotateDeg}deg) saturate(${saturate}) brightness(${brightness}) contrast(${contrast})`,
+            transform: "scale(1.08)",
+          }}
+          onError={(e) => {
+            // @ts-ignore
+            console.error("Planet orb video error:", e?.currentTarget?.error);
+          }}
+        />
+      </div>
+
+      {/* Rim + glow (matches meter vibe) */}
+      <div className="pointer-events-none absolute inset-0 rounded-full orbRim" />
+
+      {/* Readability scrim (keeps text readable without looking like a label box) */}
+      <div className="pointer-events-none absolute inset-0 rounded-full orbScrim" />
+
+      {/* Text (stable, high-contrast) */}
+      <div className="relative z-10 flex flex-col items-center justify-center leading-none">
+        <span className="orbTextTop">{labelTop}</span>
+        <span className="orbTextBottom">{labelBottom}</span>
+      </div>
+    </button>
+  );
+}
+
+/* -------------------------------
    Tap Share Sheet
    ------------------------------- */
 
@@ -711,15 +800,14 @@ function DashboardInner() {
 
           {/* MAIN HOROSCOPE CARD */}
           <section>
-            <div className="relative rounded-3xl border border-yellow-200/45 bg-slate-950/40 p-6 sm:p-7 backdrop-blur-md shadow-[0_0_45px_rgba(15,23,42,0.9)]">
-              <div className="relative space-y-5">
+            <div className="relative overflow-hidden rounded-3xl border border-yellow-200/45 shadow-[0_0_45px_rgba(15,23,42,0.9)]">
+              <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md" />
+              <div className="relative space-y-5 p-6 sm:p-7">
                 <div className="space-y-1.5">
                   <p className="text-[11px] uppercase tracking-[0.28em] text-yellow-100/95">
                     Today’s Alignment
                   </p>
-                  <p className="text-xs sm:text-[13px] text-slate-100/90">
-                  
-                  </p>
+                  <p className="text-xs sm:text-[13px] text-slate-100/90"></p>
                 </div>
 
                 <div className="space-y-3">
@@ -745,71 +833,64 @@ function DashboardInner() {
 
           {/* METERS */}
           <section>
-            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-slate-950/35 p-4 sm:p-6 backdrop-blur-md shadow-[0_0_40px_rgba(0,0,0,0.75)]">
-              <div className="pointer-events-none absolute inset-0 opacity-60 mix-blend-screen">
-                <div className="absolute -left-16 -top-16 h-44 w-44 rounded-full bg-sky-500/12 blur-3xl" />
-                <div className="absolute -right-20 bottom-0 h-56 w-56 rounded-full bg-indigo-500/10 blur-3xl" />
+            <div className="relative p-4 sm:p-6">
+              <div className="mb-4">
+                <p className="metersTitle">Daily Meters</p>
               </div>
 
-              <div className="relative">
-                <div className="mb-4">
-                  <p className="metersTitle">Daily Meters</p>
+              <div className="grid grid-cols-3 gap-3 sm:gap-6">
+                {/* ENERGY */}
+                <div className="flex flex-col items-center text-center">
+                  <div className="mb-2">
+                    <div className="meterHead">ENERGY</div>
+                    <div className="mt-0.5 text-[12px] text-slate-200/80">
+                      Capacity to act
+                    </div>
+                  </div>
+
+                  <VideoRingMeter
+                    progress={energyLevel}
+                    directive="Make moves"
+                    tickCount={10}
+                    videoSrc="/textures/solar-flare-animated.mp4"
+                    videoHueRotateDeg={0}
+                  />
                 </div>
 
-                <div className="grid grid-cols-3 gap-3 sm:gap-6">
-                  {/* ENERGY */}
-                  <div className="flex flex-col items-center text-center">
-                    <div className="mb-2">
-                      <div className="meterHead">ENERGY</div>
-                      <div className="mt-0.5 text-[11px] text-slate-400/90">
-                        Capacity to act
-                      </div>
+                {/* FOCUS */}
+                <div className="flex flex-col items-center text-center">
+                  <div className="mb-2">
+                    <div className="meterHead">FOCUS</div>
+                    <div className="mt-0.5 text-[12px] text-slate-200/80">
+                      Precision attention
                     </div>
-
-                    <VideoRingMeter
-                      progress={energyLevel}
-                      directive="Make moves"
-                      tickCount={10}
-                      videoSrc="/textures/solar-flare-animated.mp4"
-                      videoHueRotateDeg={0}
-                    />
                   </div>
 
-                  {/* FOCUS */}
-                  <div className="flex flex-col items-center text-center">
-                    <div className="mb-2">
-                      <div className="meterHead">FOCUS</div>
-                      <div className="mt-0.5 text-[11px] text-slate-400/90">
-                        Precision attention
-                      </div>
-                    </div>
+                  <VideoRingMeter
+                    progress={focusLevel}
+                    directive="Lock in"
+                    tickCount={10}
+                    videoSrc="/textures/solar-flare-animated.mp4"
+                    videoHueRotateDeg={210}
+                  />
+                </div>
 
-                    <VideoRingMeter
-                      progress={focusLevel}
-                      directive="Lock in"
-                      tickCount={10}
-                      videoSrc="/textures/solar-flare-animated.mp4"
-                      videoHueRotateDeg={210}
-                    />
+                {/* CONNECTION */}
+                <div className="flex flex-col items-center text-center">
+                  <div className="mb-2">
+                    <div className="meterHead">CONNECTION</div>
+                    <div className="mt-0.5 text-[12px] text-slate-200/80">
+                      Social resonance
+                    </div>
                   </div>
 
-                  {/* CONNECTION */}
-                  <div className="flex flex-col items-center text-center">
-                    <div className="mb-2">
-                      <div className="meterHead">CONNECTION</div>
-                      <div className="mt-0.5 text-[11px] text-slate-400/90">
-                        Social resonance
-                      </div>
-                    </div>
-
-                    <VideoRingMeter
-                      progress={connectionLevel}
-                      directive="Reach out"
-                      tickCount={10}
-                      videoSrc="/textures/solar-flare-animated.mp4"
-                      videoHueRotateDeg={305}
-                    />
-                  </div>
+                  <VideoRingMeter
+                    progress={connectionLevel}
+                    directive="Reach out"
+                    tickCount={10}
+                    videoSrc="/textures/solar-flare-animated.mp4"
+                    videoHueRotateDeg={305}
+                  />
                 </div>
               </div>
             </div>
@@ -906,8 +987,9 @@ function DashboardInner() {
                     </p>
                   </div>
 
-                  <button
-                    type="button"
+                  <PlanetOrbButton
+                    labelTop="TAP"
+                    labelBottom="SHARE"
                     onClick={() => {
                       setShowTapShare(true);
                       setSyncError(null);
@@ -915,22 +997,19 @@ function DashboardInner() {
                       setSecondsRemaining(60);
                     }}
                     disabled={!bandId}
-                    className={
-                      "mt-1 flex h-24 w-24 items-center justify-center rounded-full border text-center transition " +
-                      (!bandId
-                        ? "cursor-not-allowed border-slate-600/60 bg-slate-900/70 text-slate-500"
-                        : "border-yellow-200/90 bg-gradient-to-br from-yellow-400/95 via-amber-300/95 to-yellow-200/95 text-slate-950 shadow-[0_0_28px_rgba(250,204,21,0.65)] hover:brightness-110")
-                    }
                     title={
                       bandId
                         ? "Open Tap Share"
                         : "Open /dashboard?band=YOUR_BAND_ID first"
                     }
-                  >
-                    <span className="px-3 text-[11px] font-semibold uppercase tracking-[0.18em]">
-                      Tap Share
-                    </span>
-                  </button>
+                    // Warm / solar
+                    hueRotateDeg={18}
+                    saturate={1.18}
+                    brightness={1.07}
+                    contrast={1.12}
+                    glowRGBA="rgba(250,204,21,0.55)"
+                    videoSrc="/textures/planet-buttons.mp4"
+                  />
 
                   <p className="text-[11px] text-slate-500">
                     One-armed share that turns off after a single tap—every tap
@@ -952,15 +1031,18 @@ function DashboardInner() {
                     </p>
                   </div>
 
-                  <button
-                    type="button"
+                  <PlanetOrbButton
+                    labelTop="STAR"
+                    labelBottom="SYNC"
                     onClick={() => router.push("/star-sync")}
-                    className="mt-1 flex h-24 w-24 items-center justify-center rounded-full border border-sky-200/90 bg-gradient-to-br from-sky-500/95 via-cyan-400/95 to-sky-300/95 text-center shadow-[0_0_28px_rgba(56,189,248,0.7)] hover:brightness-110"
-                  >
-                    <span className="px-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-950">
-                      Star Sync
-                    </span>
-                  </button>
+                    // Cool / cosmic
+                    hueRotateDeg={205}
+                    saturate={1.12}
+                    brightness={1.03}
+                    contrast={1.1}
+                    glowRGBA="rgba(56,189,248,0.55)"
+                    videoSrc="/textures/planet-buttons.mp4"
+                  />
 
                   <p className="text-[11px] text-slate-500">
                     Enter their sign or birthday—or have them tap their NUMA
@@ -1063,21 +1145,72 @@ function DashboardInner() {
           }
         }
 
-        /* NEW: meters typography tuning */
+        /* meters typography tuning (more readable) */
         .metersTitle {
-          font-size: 12px;
-          font-weight: 700;
-          letter-spacing: 0.22em;
+          font-size: 14px;
+          font-weight: 800;
+          letter-spacing: 0.32em;
           text-transform: uppercase;
-          color: rgba(226, 232, 240, 0.92);
+          color: rgba(255, 255, 255, 0.95);
+          text-shadow: 0 2px 14px rgba(0, 0, 0, 0.75);
         }
 
         .meterHead {
-          font-size: 11px;
-          font-weight: 650; /* slightly bolder than the rest */
-          letter-spacing: 0.24em;
+          font-size: 12px;
+          font-weight: 800;
+          letter-spacing: 0.28em;
           text-transform: uppercase;
-          color: rgba(226, 232, 240, 0.88);
+          color: rgba(255, 255, 255, 0.92);
+          text-shadow: 0 2px 14px rgba(0, 0, 0, 0.8);
+        }
+
+        /* Planet orb button styling */
+        .planetOrb {
+          border: 1px solid rgba(255, 255, 255, 0.22);
+          box-shadow: 0 0 24px rgba(0, 0, 0, 0.65);
+          transform: translateZ(0);
+          will-change: transform, filter;
+        }
+
+        .planetOrb:hover {
+          box-shadow: 0 0 30px rgba(0, 0, 0, 0.65),
+            0 0 26px var(--orbGlow);
+        }
+
+        .orbRim {
+          border: 1px solid rgba(255, 255, 255, 0.26);
+          box-shadow: 0 0 18px var(--orbGlow),
+            inset 0 0 18px rgba(255, 255, 255, 0.08);
+        }
+
+        /* This is the readability layer (no “label box”, just a soft center calm) */
+        .orbScrim {
+          background: radial-gradient(
+            circle at center,
+            rgba(2, 6, 23, 0.68) 0%,
+            rgba(2, 6, 23, 0.44) 38%,
+            rgba(2, 6, 23, 0.12) 62%,
+            rgba(2, 6, 23, 0) 78%
+          );
+        }
+
+        .orbTextTop {
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+          color: rgba(255, 255, 255, 0.95);
+          text-shadow: 0 2px 12px rgba(0, 0, 0, 0.85);
+        }
+
+        .orbTextBottom {
+          margin-top: 4px;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+          color: rgba(255, 255, 255, 0.92);
+          text-shadow: 0 2px 12px rgba(0, 0, 0, 0.85);
         }
       `}</style>
 
