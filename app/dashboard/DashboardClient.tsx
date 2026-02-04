@@ -6,6 +6,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import AnimatedSpaceBackground from "./AnimatedSpaceBackground";
 
+/** ✅ NEW: Stardust scan CTA component (you created this file already) */
+import StardustScanCTA from "./StardustScanCTA";
+
 /** Stardust Action Card registry + pinned renderer */
 import { CARD_REGISTRY, type CardId } from "../../lib/cardRegistry";
 import { PinnedCard } from "../components/PinnedCard";
@@ -896,73 +899,15 @@ function DashboardInner() {
             </div>
           </section>
 
-          {/* STARDUST BUTTON / CARD */}
+          {/* ✅ STARDUST BUTTON / CARD (replaced with component) */}
           <section>
-            <button
-              type="button"
-              onClick={startAnalysisFlow}
-              disabled={hasScannedToday || analyzing}
-              className={
-                "group relative w-full overflow-hidden rounded-3xl border border-sky-200/60 bg-gradient-to-br from-slate-950/90 via-slate-950/80 to-slate-950/90 p-4 sm:p-5 text-left shadow-[0_0_40px_rgba(15,23,42,0.9)] transition-transform duration-200 " +
-                (hasScannedToday || analyzing
-                  ? "opacity-95"
-                  : "hover:-translate-y-0.5 hover:shadow-[0_0_55px_rgba(56,189,248,0.55)]")
-              }
-            >
-              <div className="pointer-events-none absolute inset-0 opacity-60 mix-blend-screen group-hover:opacity-90">
-                <div className="absolute -left-10 -top-10 h-32 w-32 rounded-full bg-sky-500/25 blur-3xl" />
-                <div className="absolute bottom-0 right-0 h-40 w-40 rounded-full bg-indigo-500/25 blur-3xl" />
-              </div>
-
-              <div className="relative flex items-center gap-4">
-                <div className="relative flex h-14 w-14 flex-shrink-0 items-center justify-center">
-                  <div className="absolute inset-0 rounded-full border border-sky-200/70 opacity-70 group-hover:opacity-100 group-hover:shadow-[0_0_22px_rgba(56,189,248,0.85)]" />
-                  <div className="absolute h-10 w-10 rounded-full border border-sky-300/50" />
-                  <div className="absolute h-1.5 w-1.5 translate-x-4 rounded-full bg-sky-300 shadow-[0_0_10px_rgba(56,189,248,0.9)] animate-[spin_5s_linear_infinite]" />
-                  <span className="relative text-[10px] font-semibold uppercase tracking-[0.16em] text-sky-100/90">
-                    Scan
-                  </span>
-                </div>
-
-                <div className="flex-1 space-y-1.5">
-                  {!hasScannedToday ? (
-                    <>
-                      <p className="text-[11px] uppercase tracking-[0.22em] text-sky-100/80">
-                        Discover Your Stardust
-                      </p>
-                      <p className="text-sm font-semibold text-slate-50 sm:text-[15px]">
-                        {analyzing
-                          ? "Calibrating your reading…"
-                          : "Run today’s scan to reveal your Cosmic Card and Stardust Action."}
-                      </p>
-                      <p className="text-[11px] text-slate-300/90">
-                        {analyzing ? (
-                          <span className="inline-flex items-center gap-2">
-                            <span className="scanDot" />
-                            {analysisLabel}
-                          </span>
-                        ) : (
-                          "Powered by real-time moon and planet positions for your sign."
-                        )}
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-[11px] uppercase tracking-[0.22em] text-sky-100/80">
-                        Today’s Stardust
-                      </p>
-                      <p className="text-sm font-semibold text-slate-50 sm:text-[15px]">
-                        {stardustCardName ?? "Your Cosmic Card is set for today."}
-                      </p>
-                      <p className="text-[11px] text-slate-300/90">
-                        {stardustTagline ??
-                          "Tap to revisit today’s sky scan and guidance."}
-                      </p>
-                    </>
-                  )}
-                </div>
-              </div>
-            </button>
+            <StardustScanCTA
+              onScanComplete={() => {
+                // Keep existing behavior
+                startAnalysisFlow();
+              }}
+              defaultState={hasScannedToday ? "scanned" : "idle"}
+            />
           </section>
 
           {pinnedCardSlug && CARD_REGISTRY[pinnedCardSlug] && (
