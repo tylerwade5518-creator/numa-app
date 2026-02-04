@@ -52,9 +52,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "The Architect",
     animatedVideo: "/cards/animated/architect.mp4",
     meaning:
-      "Architect is about structure that supports growth. It favors design over reaction.",
+      "Build the structure that holds your future steady—systems over scrambling.",
     whyToday:
-      "When attention is scattered, outcomes get noisy. The sky’s patterns often reward systems—simple inputs that produce reliable results.",
+      "Under today’s sky, scattered focus turns loud; simple structure returns power.",
     StardustAction:
       "Build one small structure today that makes tomorrow easier to move through.",
   },
@@ -64,9 +64,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "The Ascendant",
     animatedVideo: "/cards/animated/ascendant.mp4",
     meaning:
-      "Ascendant points to how you show up. It’s presence, posture, and first impressions—internally and outwardly.",
+      "Choose your presence—how you enter a room shapes what follows.",
     whyToday:
-      "Daily cycles shift how energy presents before it settles. Timing favors a clean signal: what you project becomes the frame for what follows.",
+      "Today’s sky favors a clean signal: what you project becomes the frame.",
     StardustAction:
       "Decide how you want to show up today, and let your actions quietly reflect it.",
   },
@@ -76,9 +76,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "Ascension",
     animatedVideo: "/cards/animated/ascension.mp4",
     meaning:
-      "Ascension is upward motion through consistency. It’s progress that compounds rather than spikes.",
+      "Climb through consistency—small wins compound into altitude.",
     whyToday:
-      "Some days reward acceleration, others reward steady gain. The sky’s rhythm often amplifies compounding behaviors.",
+      "This card shows up when the sky is amplifying repeatable effort over bursts.",
     StardustAction:
       "Take one small step today that you could realistically repeat again tomorrow.",
   },
@@ -88,9 +88,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "Ash",
     animatedVideo: "/cards/animated/ash.mp4",
     meaning:
-      "Ash is what remains after intensity passes. It’s simplification, clearing, and quiet resets.",
+      "Clear what’s burned out—keep only what still has warmth and purpose.",
     whyToday:
-      "After pressure, the system stabilizes by shedding excess.",
+      "After intensity, the day asks for simplification so your system can settle.",
     StardustAction:
       "Remove one unnecessary thing from your day today and notice the space it creates.",
   },
@@ -100,9 +100,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "Beacon",
     animatedVideo: "/cards/animated/beacon.mp4",
     meaning:
-      "Beacon is guidance through clarity. It’s the light you set that others—and you—can navigate by.",
+      "Set one guiding light—clarity becomes the path.",
     whyToday:
-      "Clarity becomes a stabilizer when variables multiply.",
+      "Today’s sky multiplies variables; a single clear focus stabilizes everything.",
     StardustAction:
       "Name your main focus for today and let it guide what you say yes to.",
   },
@@ -112,9 +112,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "Choice",
     animatedVideo: "/cards/animated/choice.mp4",
     meaning:
-      "Choice is agency. It’s the moment you stop drifting and select a direction.",
+      "Claim agency—pick a direction and stop feeding the drift.",
     whyToday:
-      "Small decisions create large downstream effects.",
+      "This card shows up when one decision will change the whole downstream story.",
     StardustAction:
       "Make one clear decision today instead of leaving it unresolved.",
   },
@@ -124,9 +124,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "The Conduit",
     animatedVideo: "/cards/animated/conduit.mp4",
     meaning:
-      "Conduit is clean flow between you and what you’re building.",
+      "Unblock the channel—clean flow is quiet strength.",
     whyToday:
-      "Clear channels allow energy to move without resistance.",
+      "Under today’s sky, friction costs more; smoother pathways multiply momentum.",
     StardustAction:
       "Clear one small bottleneck today so things can move more smoothly.",
   },
@@ -136,9 +136,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "Core",
     animatedVideo: "/cards/animated/core.mp4",
     meaning:
-      "Core is essence—what matters when everything else is stripped away.",
+      "Return to the essential—what’s true when everything extra is removed.",
     whyToday:
-      "Returning to fundamentals stabilizes the system.",
+      "The day rewards fundamentals; the simplest truth becomes your compass.",
     StardustAction:
       "Reduce one situation today to its simplest truth, then act from there.",
   },
@@ -148,9 +148,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "Crossing",
     animatedVideo: "/cards/animated/crossing.mp4",
     meaning:
-      "Crossing is transition between patterns.",
+      "Move through the threshold—transition is the work.",
     whyToday:
-      "Lingering often costs more than moving.",
+      "This card shows up when lingering creates drag and motion restores clarity.",
     StardustAction:
       "Take one step today that clearly moves you to the other side of something.",
   },
@@ -160,9 +160,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "Drift",
     animatedVideo: "/cards/animated/drift.mp4",
     meaning:
-      "Drift is controlled looseness.",
+      "Stay responsive—soft grip, sharp awareness.",
     whyToday:
-      "Some days reward responsiveness over control.",
+      "Today’s sky favors adaptation over control; timing beats force.",
     StardustAction:
       "Loosen your grip on one outcome today and stay responsive instead.",
   },
@@ -172,9 +172,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "Echo",
     animatedVideo: "/cards/animated/echo.mp4",
     meaning:
-      "Echo is repetition with information.",
+      "Listen to repetition—patterns are messages, not noise.",
     whyToday:
-      "Patterns repeat until they’re noticed.",
+      "This card shows up when the same signal keeps returning until you name it.",
     StardustAction:
       "Notice what keeps repeating today and treat it as useful information.",
   },
@@ -184,9 +184,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "Entry",
     animatedVideo: "/cards/animated/entry.mp4",
     meaning:
-      "Entry is beginning with intention.",
+      "Begin with intention—the first step sets the tone.",
     whyToday:
-      "Beginnings carry disproportionate influence.",
+      "Under today’s sky, starts carry extra weight; enter clean and deliberate.",
     StardustAction:
       "Start one thing today with intention instead of rushing into it.",
   },
@@ -196,9 +196,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "Fracture",
     animatedVideo: "/cards/animated/fracture.mp4",
     meaning:
-      "Fracture reveals weak points.",
+      "Find the weak point—what cracks is asking to be reinforced.",
     whyToday:
-      "Pressure exposes what needs attention.",
+      "Pressure is revealing exactly where a practical fix will save you later.",
     StardustAction:
       "Identify one weak point today and reinforce it with a practical change.",
   },
@@ -208,9 +208,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "Gravity",
     animatedVideo: "/cards/animated/gravity.mp4",
     meaning:
-      "Gravity is responsibility and weight.",
+      "Honor what matters—give weight to the real work.",
     whyToday:
-      "Depth matters more than breadth today.",
+      "Today’s sky pulls you toward depth over breadth; one priority wins.",
     StardustAction:
       "Give your best attention today to the task that truly matters most.",
   },
@@ -220,9 +220,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "The Harbinger",
     animatedVideo: "/cards/animated/harbinger.mp4",
     meaning:
-      "Harbinger is a signal of change.",
+      "Read the signal—change is arriving before it’s obvious.",
     whyToday:
-      "Small indicators often precede big shifts.",
+      "This card shows up when small indicators are enough to act ahead of the curve.",
     StardustAction:
       "Notice the strongest signal today and prepare one step ahead of it.",
   },
@@ -232,9 +232,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "Ignition",
     animatedVideo: "/cards/animated/ignition.mp4",
     meaning:
-      "Ignition is activation.",
+      "Start the spark—movement creates the fuel.",
     whyToday:
-      "Momentum is sensitive to timing.",
+      "Under today’s sky, momentum is sensitive; one push becomes a cascade.",
     StardustAction:
       "Take one idea that’s been in your head and give it a moment of movement today.",
   },
@@ -244,9 +244,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "Imprint",
     animatedVideo: "/cards/animated/imprint.mp4",
     meaning:
-      "Imprint is influence.",
+      "Leave a mark with care—small moments set long tone.",
     whyToday:
-      "Small moments set lasting tone.",
+      "This card shows up when your influence is louder than you think today.",
     StardustAction:
       "Choose one interaction today and leave it better than you found it.",
   },
@@ -256,9 +256,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "Lens",
     animatedVideo: "/cards/animated/lens.mp4",
     meaning:
-      "Lens is perspective.",
+      "Shift perspective—your frame decides the feeling.",
     whyToday:
-      "Interpretation shapes outcome.",
+      "Today’s sky makes interpretation powerful; a cleaner lens changes outcomes fast.",
     StardustAction:
       "Reframe one challenge today by focusing on what it’s teaching instead of what it’s blocking.",
   },
@@ -268,9 +268,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "The Luminary",
     animatedVideo: "/cards/animated/luminary.mp4",
     meaning:
-      "Luminary is visibility.",
+      "Be seen—your light is part of the work.",
     whyToday:
-      "Expression becomes feedback.",
+      "This card shows up when expression becomes feedback and visibility brings alignment.",
     StardustAction:
       "Allow yourself to take up a little more space today—in your voice, your work, or your presence.",
   },
@@ -280,9 +280,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "Matter",
     animatedVideo: "/cards/animated/matter.mp4",
     meaning:
-      "Matter is the tangible world.",
+      "Make it real—turn idea into tangible progress.",
     whyToday:
-      "Grounding turns ideas into progress.",
+      "Under today’s sky, grounding is the advantage; action beats imagining.",
     StardustAction:
       "Bring one abstract plan down to earth today by deciding the next real action.",
   },
@@ -292,9 +292,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "The Navigator",
     animatedVideo: "/cards/animated/navigator.mp4",
     meaning:
-      "Navigator is intentional direction.",
+      "Choose your heading—orientation beats speed every time.",
     whyToday:
-      "Orientation beats speed.",
+      "This card shows up when uncertainty is solved by committing to one route.",
     StardustAction:
       "Choose one path today and stop reconsidering it for the rest of the day.",
   },
@@ -304,9 +304,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "The Oracle",
     animatedVideo: "/cards/animated/oracle.mp4",
     meaning:
-      "Oracle is insight before proof.",
+      "Trust the first knowing—insight arrives before proof.",
     whyToday:
-      "Subtle signals guide action.",
+      "Today’s sky speaks in subtleties; your initial read is cleaner than your doubts.",
     StardustAction:
       "Listen closely to your initial response today and follow it instead of second-guessing.",
   },
@@ -316,9 +316,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "The Outrider",
     animatedVideo: "/cards/animated/outrider.mp4",
     meaning:
-      "Outrider explores the edge.",
+      "Explore the edge—curiosity maps new terrain.",
     whyToday:
-      "Curiosity reveals terrain.",
+      "This card shows up when a small detour reveals something useful you couldn’t plan.",
     StardustAction:
       "Follow a moment of curiosity today and see where it leads, even briefly.",
   },
@@ -328,9 +328,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "Pioneer",
     animatedVideo: "/cards/animated/pioneer.mp4",
     meaning:
-      "Pioneer favors first movement.",
+      "Go first—beginning is your advantage.",
     whyToday:
-      "Motion replaces hesitation.",
+      "Under today’s sky, hesitation costs; motion unlocks the next signpost.",
     StardustAction:
       "Begin one thing today before you feel completely ready.",
   },
@@ -340,9 +340,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "Reckon",
     animatedVideo: "/cards/animated/reckon.mp4",
     meaning:
-      "Reckon is honest assessment.",
+      "Tell the truth—clear assessment creates clean adjustment.",
     whyToday:
-      "Clarity enables adjustment.",
+      "Today’s sky favors honesty over comfort; clarity turns into better choices fast.",
     StardustAction:
       "Take an honest look at one situation today and name what’s working and what isn’t.",
   },
@@ -352,9 +352,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "Release",
     animatedVideo: "/cards/animated/release.mp4",
     meaning:
-      "Release is letting go.",
+      "Let go with intention—free capacity, reclaim your energy.",
     whyToday:
-      "Clearing restores capacity.",
+      "This card shows up when holding on is heavier than moving forward.",
     StardustAction:
       "Let go of one past memory today that no longer brings you anything but weight.",
   },
@@ -364,9 +364,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "Remain",
     animatedVideo: "/cards/animated/remain.mp4",
     meaning:
-      "Remain is steadiness.",
+      "Stay steady—consistency separates signal from noise.",
     whyToday:
-      "Consistency separates signal from noise.",
+      "Under today’s sky, reliability wins; quiet repetition becomes your edge.",
     StardustAction:
       "Be proud today of one habit or commitment you’ve stayed consistent with.",
   },
@@ -376,9 +376,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "Reveal",
     animatedVideo: "/cards/animated/reveal.mp4",
     meaning:
-      "Reveal is clarity coming into view.",
+      "Acknowledge what you already know—truth wants daylight.",
     whyToday:
-      "Truth appears when you’re ready.",
+      "This card shows up when clarity is here, and the only delay is your permission.",
     StardustAction:
       "Acknowledge one truth today that’s already clear to you, even if you don’t say it out loud.",
   },
@@ -388,9 +388,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "Root",
     animatedVideo: "/cards/animated/root.mp4",
     meaning:
-      "Root is foundation.",
+      "Strengthen the foundation—stability is the multiplier.",
     whyToday:
-      "Stability supports everything else.",
+      "Today’s sky rewards basics: sleep, fuel, space, and routine hold the line.",
     StardustAction:
       "Strengthen one basic part of your day today—sleep, food, space, or routine.",
   },
@@ -400,9 +400,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "The Seeker",
     animatedVideo: "/cards/animated/seeker.mp4",
     meaning:
-      "Seeker is curiosity with purpose.",
+      "Ask better questions—curiosity opens locked doors.",
     whyToday:
-      "Questions open new paths.",
+      "This card shows up when assumptions are expensive and inquiry creates new paths.",
     StardustAction:
       "Approach one situation today with curiosity instead of assumption.",
   },
@@ -412,9 +412,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "The Sentinal",
     animatedVideo: "/cards/animated/sentinal.mp4",
     meaning:
-      "Sentinal is watchfulness.",
+      "Stay watchful—early awareness prevents damage.",
     whyToday:
-      "Early awareness prevents damage.",
+      "Under today’s sky, subtle warnings appear early; calm attention is protection.",
     StardustAction:
       "Watch for one early signal today that something needs attention, and respond calmly.",
   },
@@ -424,9 +424,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "Threshold",
     animatedVideo: "/cards/animated/threshold.mp4",
     meaning:
-      "Threshold marks transition.",
+      "Cross fully—half-steps keep you stuck.",
     whyToday:
-      "Hesitation creates drag.",
+      "This card shows up when commitment is the only thing missing from the doorway.",
     StardustAction:
       "Step fully into one decision today instead of hovering at the edge of it.",
   },
@@ -436,9 +436,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "Trace",
     animatedVideo: "/cards/animated/trace.mp4",
     meaning:
-      "Trace is evidence.",
+      "Follow the evidence—your life leaves patterns on purpose.",
     whyToday:
-      "Patterns reveal truth.",
+      "Today’s sky highlights repeats; what returns is asking to be understood.",
     StardustAction:
       "Pay attention today to what keeps repeating and treat it as useful information.",
   },
@@ -448,9 +448,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "Veil",
     animatedVideo: "/cards/animated/veil.mp4",
     meaning:
-      "Veil is uncertainty with purpose.",
+      "Hold the unknown with grace—mystery can be productive.",
     whyToday:
-      "Patience reveals clarity.",
+      "This card shows up when forcing certainty creates distortion; patience clears the view.",
     StardustAction:
       "Allow one question today to remain unanswered and notice how it changes your pace.",
   },
@@ -460,9 +460,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "The Visionary",
     animatedVideo: "/cards/animated/visionary.mp4",
     meaning:
-      "Visionary sees the long arc.",
+      "Choose the long arc—direction matters more than detail.",
     whyToday:
-      "Direction matters more than detail.",
+      "Under today’s sky, future-aligned choices land cleaner than short-term comfort.",
     StardustAction:
       "Make one choice today that supports where you want to be in the coming weeks.",
   },
@@ -472,9 +472,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "Voyage",
     animatedVideo: "/cards/animated/voyage.mp4",
     meaning:
-      "Voyage is the journey itself.",
+      "Stay with the journey—presence is how you sustain motion.",
     whyToday:
-      "Presence sustains motion.",
+      "This card shows up when chasing outcomes drains you; the path itself restores you.",
     StardustAction:
       "Treat today as part of the journey and focus on experiencing it rather than reaching an outcome.",
   },
@@ -484,9 +484,9 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
     title: "Witness",
     animatedVideo: "/cards/animated/witness.mp4",
     meaning:
-      "Witness is observation without distortion.",
+      "Observe without distortion—clear seeing preserves choice.",
     whyToday:
-      "Clear seeing preserves choice.",
+      "Today’s sky rewards neutrality; noticing without judgment keeps you free.",
     StardustAction:
       "Spend a moment today simply observing without judgment.",
   },
