@@ -1,7 +1,7 @@
 // app/dashboard/VideoRingMeter.tsx
 "use client";
 
-import React, { useEffect, useMemo, useRef, useId } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 
 type Labels = { low: string; mid: string; high: string };
 
@@ -42,6 +42,8 @@ export default function VideoRingMeter({
       try {
         v.muted = true;
         v.playsInline = true as any;
+        v.setAttribute("playsinline", "");
+        v.setAttribute("webkit-playsinline", "");
         v.play().catch(() => {});
       } catch {}
     };
@@ -49,43 +51,30 @@ export default function VideoRingMeter({
     tryPlay(centerVideoRef.current);
   }, []);
 
-  // Ring geometry (kept)
-  const R = 54;
-  const C = 2 * Math.PI * R;
-
+  // Geometry aligned with your original
   const SIZE = 132;
   const CX = 66;
   const CY = 66;
 
-  // Thick, lively ring
   const ringMidR = 60;
   const ringThickness = 30;
 
-  // Inner disk in your layout is inset 14px => radius ~52px
   const innerDiskInset = 14;
-  const innerDiskR = CX - innerDiskInset; // 66 - 14 = 52
+  const innerDiskR = CX - innerDiskInset; // 52
 
-  const ringCirc = 2 * Math.PI * ringMidR;
-  const dash = Math.max(0.001, p * ringCirc);
-  const gap = ringCirc;
-
-  const uid = useId().replace(/:/g, "");
-  const maskId = `ringMask-${uid}`;
+  const angleDeg = useMemo(() => Math.max(0.001, p * 360), [p]);
 
   const ringVideoStyle: React.CSSProperties = {
     filter: `hue-rotate(${videoHueRotateDeg}deg) saturate(1.3) brightness(1.15)`,
-    transform: "scale(1.22)",
+    transform: "scale(1.22) translateZ(0)",
   };
 
-  // Center plasma should be calmer + readable, but still visibly animated
   const centerVideoStyle: React.CSSProperties = {
     filter: `hue-rotate(${videoHueRotateDeg}deg) saturate(1.15) brightness(0.95) contrast(1.05)`,
-    transform: "scale(1.12)",
+    transform: "scale(1.12) translateZ(0)",
   };
 
-  // Soft circular mask so the plasma fades near the edge of the inner disk
-  const centerMaskStyle: React.CSSProperties = useMemo(() => {
-    // feather = how soft the edge fades (px)
+  const centerMaskStyle = useMemo(() => {
     const feather = 10;
     const hard = Math.max(0, innerDiskR - feather);
     const soft = innerDiskR;
@@ -96,19 +85,110 @@ export default function VideoRingMeter({
       rgba(255,255,255,0) ${soft}px
     )`;
 
+    // TS-safe: cast once (Safari needs -webkit-)
     return {
       WebkitMaskImage: m,
       maskImage: m,
+      WebkitMaskRepeat: "no-repeat",
+      maskRepeat: "no-repeat",
+      WebkitMaskSize: "100% 100%",
+      maskSize: "100% 100%",
+      WebkitMaskPosition: "center",
+      maskPosition: "center",
+      transform: "translateZ(0)",
+      WebkitTransform: "translateZ(0)",
+    } as React.CSSProperties;
+  }, [innerDiskR, CX, CY]);
+
+  // Build donut + progress + cap masks
+  const masks = useMemo(() => {
+    const outer = ringMidR + ringThickness / 2;
+    const inner = ringMidR - ringThickness / 2;
+    const feather = 2.75;
+
+    const donutMask = `radial-gradient(circle at ${CX}px ${CY}px,
+      rgba(255,255,255,0) 0px,
+      rgba(255,255,255,0) ${Math.max(0, inner - feather)}px,
+      rgba(255,255,255,1) ${inner}px,
+      rgba(255,255,255,1) ${outer}px,
+      rgba(255,255,255,0) ${outer + feather}px
+    )`;
+
+    const progressMask = `conic-gradient(from -90deg,
+      rgba(255,255,255,1) 0deg ${angleDeg}deg,
+      rgba(255,255,255,0) ${angleDeg}deg 360deg
+    )`;
+
+    // Cap centers
+    const sx = CX;
+    const sy = CY - ringMidR;
+
+    const rad = ((angleDeg - 90) * Math.PI) / 180;
+    const ex = CX + Math.cos(rad) * ringMidR;
+    const ey = CY + Math.sin(rad) * ringMidR;
+
+    const capR = ringThickness / 2;
+    const capFeather = 2.0;
+
+    const capMask = [
+      `radial-gradient(circle at ${sx}px ${sy}px,
+        rgba(255,255,255,1) 0px,
+        rgba(255,255,255,1) ${capR}px,
+        rgba(255,255,255,0) ${capR + capFeather}px
+      )`,
+      `radial-gradient(circle at ${ex}px ${ey}px,
+        rgba(255,255,255,1) 0px,
+        rgba(255,255,255,1) ${capR}px,
+        rgba(255,255,255,0) ${capR + capFeather}px
+      )`,
+    ].join(",");
+
+    return { donutMask, progressMask, capMask };
+  }, [CX, CY, ringMidR, ringThickness, angleDeg]);
+
+  const showCaps = p > 0.01;
+
+  // IMPORTANT:
+  // React.CSSProperties typings don't include WebkitMaskComposite or multi-value sizes.
+  // So we build a plain object and cast once.
+  const ringMaskStyle = useMemo(() => {
+    const images = showCaps
+      ? `${masks.donutMask}, ${masks.progressMask}, ${masks.capMask}`
+      : `${masks.donutMask}, ${masks.progressMask}`;
+
+    // For WebKit: composites are between layer1->layer2, then result->layer3
+    const composites = showCaps ? "source-in, source-over" : "source-in";
+
+    const style: any = {
+      WebkitMaskImage: images,
+      maskImage: images,
+
+      WebkitMaskRepeat: "no-repeat",
+      maskRepeat: "no-repeat",
+
+      // Provide 3 entries even if caps hidden; extra is harmless
+      WebkitMaskSize: "100% 100%, 100% 100%, 100% 100%",
+      maskSize: "100% 100%, 100% 100%, 100% 100%",
+
+      WebkitMaskPosition: "center, center, center",
+      maskPosition: "center, center, center",
+
+      WebkitMaskComposite: composites,
+
+      transform: "translateZ(0)",
+      WebkitTransform: "translateZ(0)",
+      willChange: "transform",
     };
-  }, [innerDiskR]);
+
+    return style as React.CSSProperties;
+  }, [masks.donutMask, masks.progressMask, masks.capMask, showCaps]);
 
   return (
     <div className="relative flex items-center justify-center">
-      <div className="relative h-[132px] w-[132px]">
-        {/* Dark base disk */}
+      <div className="relative h-[132px] w-[132px]" style={{ width: SIZE, height: SIZE }}>
         <div className="absolute inset-0 rounded-full bg-black/35" />
 
-        {/* ✅ NEW: Center plasma layer (behind inner disk, inside circle) */}
+        {/* Center plasma */}
         <div className="absolute inset-0 rounded-full overflow-hidden">
           <div className="absolute inset-0" style={centerMaskStyle}>
             <video
@@ -121,20 +201,15 @@ export default function VideoRingMeter({
               preload="auto"
               className="absolute inset-0 h-full w-full object-cover"
               style={centerVideoStyle}
-              onError={(e) => {
-                // @ts-ignore
-                console.error("Center plasma video error:", e?.currentTarget?.error);
-              }}
             />
-            {/* A subtle “bloom” so plasma feels like it’s under glass */}
             <div className="absolute inset-0 centerBloom" />
           </div>
         </div>
 
-        {/* Inner disk for contrast (kept), now sits above plasma */}
+        {/* Inner disk */}
         <div className="absolute inset-[14px] rounded-full bg-slate-950/55 border border-white/8" />
 
-        {/* Tick ring (kept) */}
+        {/* Tick ring */}
         <svg className="absolute inset-0" viewBox="0 0 132 132" fill="none" aria-hidden="true">
           <g opacity="0.55">
             {Array.from({ length: tickCount }).map((_, i) => {
@@ -157,51 +232,27 @@ export default function VideoRingMeter({
               );
             })}
           </g>
-
           <circle cx="66" cy="66" r="40" stroke="rgba(255,255,255,0.10)" strokeWidth="2" />
         </svg>
 
-        {/* VIDEO RING WITH ROUNDED CAPS (kept) */}
+        {/* Ring */}
         <div className="absolute inset-0 rounded-full overflow-hidden">
-          <svg className="absolute inset-0" viewBox="0 0 132 132" width={SIZE} height={SIZE} aria-hidden="true">
-            <defs>
-              <mask id={maskId} maskUnits="userSpaceOnUse">
-                <rect width={SIZE} height={SIZE} fill="black" />
-                <circle
-                  cx={CX}
-                  cy={CY}
-                  r={ringMidR}
-                  fill="none"
-                  stroke="white"
-                  strokeWidth={ringThickness}
-                  strokeLinecap="round"
-                  strokeDasharray={`${dash} ${gap}`}
-                  transform={`rotate(-90 ${CX} ${CY})`}
-                />
-              </mask>
-            </defs>
-
-            <foreignObject width={SIZE} height={SIZE} mask={`url(#${maskId})`}>
-              <div className="relative h-full w-full">
-                <video
-                  ref={ringVideoRef}
-                  src={videoSrc}
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  preload="auto"
-                  className="absolute inset-0 h-full w-full object-cover"
-                  style={ringVideoStyle}
-                  onError={(e) => {
-                    // @ts-ignore
-                    console.error("Meter ring video error:", e?.currentTarget?.error);
-                  }}
-                />
-                <div className="absolute inset-0 ringFeather" />
-              </div>
-            </foreignObject>
-          </svg>
+          <div className="absolute inset-0" style={ringMaskStyle}>
+            <div className="relative h-full w-full">
+              <video
+                ref={ringVideoRef}
+                src={videoSrc}
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="auto"
+                className="absolute inset-0 h-full w-full object-cover"
+                style={ringVideoStyle}
+              />
+              <div className="absolute inset-0 ringFeather" />
+            </div>
+          </div>
         </div>
 
         {/* Center text */}
@@ -248,9 +299,9 @@ export default function VideoRingMeter({
           );
           mix-blend-mode: multiply;
           opacity: 0.35;
+          transform: translateZ(0);
         }
 
-        /* Center bloom: keeps plasma visible but not overpowering text */
         .centerBloom {
           pointer-events: none;
           position: absolute;
@@ -265,6 +316,7 @@ export default function VideoRingMeter({
           );
           mix-blend-mode: screen;
           opacity: 0.22;
+          transform: translateZ(0);
         }
       `}</style>
     </div>

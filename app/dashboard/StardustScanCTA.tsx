@@ -47,30 +47,28 @@ export default function StardustScanCTA({
     if (defaultState === "scanned") setPhase("scanned");
   }, [defaultState]);
 
+  // Title (top line)
   const titleText = useMemo(() => {
     if (isScanned) return "Stardust locked";
     if (phase === "hover") return "Sky sensor armed";
     if (phase === "press") return "Engaging sensor…";
-    if (phase === "calibrating") return "Calibrating celestial coordinates…";
-    if (phase === "sweeping") return "Sweeping the current sky above you…";
-    if (phase === "locking") return "Locking moon + planetary aspects…";
-    if (phase === "revealing") return "Signal found. Revealing your card…";
+    if (phase === "calibrating") return "Scanning today’s sky";
+    if (phase === "sweeping") return "Locating your Cosmic Card";
+    if (phase === "locking") return "Calculating today’s action";
+    if (phase === "revealing") return "Finalizing your pull…";
     return `Scan ${dayLabel}’s sky`;
   }, [phase, isScanned, dayLabel]);
 
+  // Subtext (2nd line) — your requested numbered statuses while scanning
   const subText = useMemo(() => {
     if (isScanned) return "Tap to open your Cosmic Card + Stardust Action.";
+    if (phase === "calibrating") return "1. Scanning today’s sky.";
+    if (phase === "sweeping") return "2. Locating your Cosmic Card.";
+    if (phase === "locking" || phase === "revealing")
+      return "3. Calculating today’s action.";
     if (isBusy) return "Real-time sky data • fast scan • daily unique pull";
     return "Reveal your Cosmic Card + Stardust Action for the day.";
-  }, [isBusy, isScanned]);
-
-  const actionText = useMemo(() => {
-    if (isScanned) return "Open";
-    if (phase === "calibrating") return "Calibrating…";
-    if (phase === "sweeping" || phase === "locking" || phase === "revealing")
-      return "Scanning…";
-    return "Scan";
-  }, [phase, isScanned]);
+  }, [phase, isBusy, isScanned]);
 
   const badgeText = useMemo(() => {
     if (isScanned) return "Completed";
@@ -102,30 +100,30 @@ export default function StardustScanCTA({
     setPhase("press");
     await new Promise((r) => setTimeout(r, 140));
 
-    // Calibration (feels “instrument-like”)
+    // Phase 1: Scanning today’s sky
     setPhase("calibrating");
-    for (let i = 0; i <= 14; i++) {
-      await new Promise((r) => setTimeout(r, 26));
+    for (let i = 0; i <= 20; i++) {
+      await new Promise((r) => setTimeout(r, 22));
       setProgress(clamp01(i / 100));
     }
 
-    // Sweep
+    // Phase 2: Locating your Cosmic Card
     setPhase("sweeping");
-    for (let i = 15; i <= 62; i++) {
-      await new Promise((r) => setTimeout(r, 16));
+    for (let i = 21; i <= 72; i++) {
+      await new Promise((r) => setTimeout(r, 15));
       setProgress(clamp01(i / 100));
     }
 
-    // Lock
+    // Phase 3: Calculating today’s action
     setPhase("locking");
-    for (let i = 63; i <= 86; i++) {
-      await new Promise((r) => setTimeout(r, 20));
+    for (let i = 73; i <= 92; i++) {
+      await new Promise((r) => setTimeout(r, 18));
       setProgress(clamp01(i / 100));
     }
 
-    // Reveal
+    // Finalize
     setPhase("revealing");
-    for (let i = 87; i <= 100; i++) {
+    for (let i = 93; i <= 100; i++) {
       await new Promise((r) => setTimeout(r, 18));
       setProgress(clamp01(i / 100));
     }
@@ -145,11 +143,11 @@ export default function StardustScanCTA({
       aria-label="Scan today's sky to reveal your Cosmic Card and Stardust Action"
       className={[
         "group relative w-full overflow-hidden rounded-3xl border",
-        "px-5 py-4 text-left transition-transform",
+        // ✅ Taller container + a bit more breathing room
+        "px-6 py-5 text-left transition-transform",
         isBusy
           ? "cursor-not-allowed opacity-95"
           : "hover:scale-[1.01] active:scale-[0.99]",
-        // More “premium” border behavior
         isScanned
           ? "border-sky-200/30"
           : isBusy
@@ -195,16 +193,16 @@ export default function StardustScanCTA({
       <div className="pointer-events-none absolute left-0 right-0 top-0 h-px bg-white/10" />
 
       {/* CONTENT */}
-      <div className="relative flex items-center gap-4">
-        {/* LEFT: Sensor “port” */}
-        <div className="relative h-12 w-12 shrink-0">
+      <div className="relative flex items-center gap-5">
+        {/* LEFT: Sensor “port” — ✅ larger */}
+        <div className="relative h-16 w-16 shrink-0">
           <div className="absolute inset-0 rounded-2xl bg-black/25 ring-1 ring-white/10" />
-          <div className="absolute inset-[6px] rounded-xl bg-slate-900/25 ring-1 ring-white/10" />
+          <div className="absolute inset-[7px] rounded-xl bg-slate-900/25 ring-1 ring-white/10" />
 
           {/* Radar ring */}
           <div
             className={[
-              "absolute inset-[4px] rounded-2xl radarRing",
+              "absolute inset-[5px] rounded-2xl radarRing",
               isBusy ? "opacity-95" : "opacity-70 group-hover:opacity-90",
             ].join(" ")}
           />
@@ -212,7 +210,7 @@ export default function StardustScanCTA({
           {/* Orbit dot */}
           <div
             className={[
-              "absolute inset-[4px] rounded-2xl orbitWrap",
+              "absolute inset-[5px] rounded-2xl orbitWrap",
               isBusy ? "orbitFast" : "orbitSlow",
             ].join(" ")}
           >
@@ -220,7 +218,7 @@ export default function StardustScanCTA({
           </div>
 
           <div className="absolute inset-0 grid place-items-center">
-            <span className="text-[10px] font-semibold tracking-[0.24em] text-white/75">
+            <span className="text-[11px] font-semibold tracking-[0.24em] text-white/75">
               SCAN
             </span>
           </div>
@@ -249,13 +247,15 @@ export default function StardustScanCTA({
             </div>
           </div>
 
-          <div className="mt-1 text-[14px] font-semibold text-white/92">
+          <div className="mt-1 text-[15px] font-semibold text-white/92">
             {titleText}
           </div>
 
-          <div className="mt-1 text-[12px] text-slate-200/65">{subText}</div>
+          <div className="mt-1 text-[12.5px] text-slate-200/65">
+            {subText}
+          </div>
 
-          {/* Progress: “scan bar” + faint waveform */}
+          {/* Progress: scan bar + faint waveform */}
           {isBusy && (
             <div className="mt-3 space-y-2">
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
@@ -272,25 +272,7 @@ export default function StardustScanCTA({
           )}
         </div>
 
-        {/* RIGHT: Action “device button” */}
-        <div className="shrink-0">
-          <div
-            className={[
-              "relative rounded-2xl border px-4 py-2",
-              "bg-black/20",
-              isBusy
-                ? "border-sky-200/25"
-                : isScanned
-                ? "border-emerald-300/20"
-                : "border-white/12 group-hover:border-sky-200/25",
-            ].join(" ")}
-          >
-            <div className="pointer-events-none absolute inset-0 rounded-2xl actionGlow" />
-            <div className="relative text-[12px] font-semibold text-white/92">
-              {actionText}
-            </div>
-          </div>
-        </div>
+        {/* ✅ RIGHT: removed the non-functional Open button entirely */}
       </div>
 
       {/* Bottom “instrument” line */}
@@ -333,8 +315,18 @@ export default function StardustScanCTA({
           background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
           background-size: 18px 18px;
           filter: blur(0.2px);
-          mask-image: radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.55) 70%, rgba(0, 0, 0, 0) 100%);
-          -webkit-mask-image: radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.55) 70%, rgba(0, 0, 0, 0) 100%);
+          mask-image: radial-gradient(
+            circle at 50% 50%,
+            rgba(0, 0, 0, 1) 0%,
+            rgba(0, 0, 0, 0.55) 70%,
+            rgba(0, 0, 0, 0) 100%
+          );
+          -webkit-mask-image: radial-gradient(
+            circle at 50% 50%,
+            rgba(0, 0, 0, 1) 0%,
+            rgba(0, 0, 0, 0.55) 70%,
+            rgba(0, 0, 0, 0) 100%
+          );
         }
 
         .cornerGlow {
@@ -427,14 +419,14 @@ export default function StardustScanCTA({
 
         .orbitDot {
           position: absolute;
-          top: 6px;
+          top: 7px;
           left: 50%;
-          width: 6px;
-          height: 6px;
+          width: 7px;
+          height: 7px;
           transform: translateX(-50%);
           border-radius: 9999px;
           background: rgba(56, 189, 248, 0.95);
-          box-shadow: 0 0 16px rgba(56, 189, 248, 0.75);
+          box-shadow: 0 0 18px rgba(56, 189, 248, 0.75);
         }
 
         .progressFill {
