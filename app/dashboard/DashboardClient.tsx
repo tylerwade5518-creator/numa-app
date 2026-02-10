@@ -1,42 +1,65 @@
 // app/dashboard/page.tsx
 "use client";
 
-import React, { Suspense, useEffect, useMemo, useState } from "react";
+import React, { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import AnimatedSpaceBackground from "./AnimatedSpaceBackground";
+import dynamic from "next/dynamic";
 
-/** ✅ NEW: Stardust scan CTA component (you created this file already) */
-import StardustScanCTA from "./StardustScanCTA";
+// ✅ Dynamic-load heavier visual modules (no visual change, faster initial boot)
+const AnimatedSpaceBackground = dynamic(() => import("./AnimatedSpaceBackground"), {
+  ssr: false,
+});
 
-/** Stardust Action Card registry + pinned renderer */
-import { CARD_REGISTRY, type CardId } from "../../lib/cardRegistry";
-import { PinnedCard } from "../components/PinnedCard";
+const StardustScanCTA = dynamic(() => import("./StardustScanCTA"), {
+  ssr: false,
+});
 
-/** Video ring meters */
-import VideoRingMeter from "./VideoRingMeter";
+// ✅ METERS REMOVED: VideoRingMeter is no longer used on dashboard
+// const VideoRingMeter = dynamic(() => import("./VideoRingMeter"), { ssr: false });
 
-/* -------------------------------
-   Supabase client (client-side)
-   ------------------------------- */
+// ✅ NEW: Instrument Panel (separate file for easy iteration)
+const DailyInstrumentPanel = dynamic(() => import("./DailyInstrumentPanel"), {
+  ssr: false,
+});
 
-function getSupabase(): SupabaseClient | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
+const PinnedCard = dynamic(() => import("../components/PinnedCard").then((m) => m.PinnedCard), {
+  ssr: false,
+});
 
-/**
- * Supabase table:
- * public.band_state
- * columns:
- * - band_id (text PK)
- * - tapshare_armed (bool)
- * - tapshare_fields (jsonb)
- * - tapshare_armed_until (timestamptz)
- * - updated_at (timestamptz)
- */
+type CardId =
+  | "architect"
+  | "ascendant"
+  | "ascension"
+  | "ash"
+  | "beacon"
+  | "choice"
+  | "conduit"
+  | "core"
+  | "crossing"
+  | "drift"
+  | "echo"
+  | "entry"
+  | "fracture"
+  | "gravity"
+  | "harbinger"
+  | "ignition"
+  | "imprint"
+  | "lens"
+  | "luminary"
+  | "matter"
+  | "navigator"
+  | "oracle"
+  | "outrider"
+  | "pioneer"
+  | "reckon"
+  | "release"
+  | "remain"
+  | "reveal"
+  | "root"
+  | "seeker"
+  | "sentinal"
+  | "threshold";
+
 const BAND_STATE_TABLE = "band_state";
 const LAST_BAND_STORAGE_KEY = "numa:lastBandId";
 
@@ -74,26 +97,23 @@ const TAP_SHARE_FIELD_LABELS: Record<TapShareField, string> = {
 };
 
 type TapShareProfile = "none" | "social" | "business";
+type SyncStatus = "idle" | "syncing";
 
 /* -------------------------------
    Planet Orb Button (animated video)
    ------------------------------- */
 
 function PlanetOrbButton(props: {
-  labelTop: string; // e.g. "TAP"
-  labelBottom: string; // e.g. "SHARE"
+  labelTop: string;
+  labelBottom: string;
   onClick: () => void;
   disabled?: boolean;
   title?: string;
-  /** 0 = warm original; adjust per button */
   hueRotateDeg?: number;
-  /** fine tuning per button */
   saturate?: number;
   brightness?: number;
   contrast?: number;
-  /** glow tint; CSS rgba string */
   glowRGBA?: string;
-  /** video src must be in /public */
   videoSrc?: string;
 }) {
   const {
@@ -123,12 +143,10 @@ function PlanetOrbButton(props: {
       }
       style={
         {
-          // Provide per-instance glow color to CSS via custom property
           ["--orbGlow" as any]: glowRGBA,
         } as React.CSSProperties
       }
     >
-      {/* Video planet surface */}
       <div className="absolute inset-0 overflow-hidden rounded-full">
         <video
           className="absolute inset-0 h-full w-full object-cover"
@@ -137,25 +155,18 @@ function PlanetOrbButton(props: {
           muted
           loop
           playsInline
-          preload="auto"
+          // ✅ important: don’t block initial load with video fetch
+          preload="none"
           style={{
             filter: `hue-rotate(${hueRotateDeg}deg) saturate(${saturate}) brightness(${brightness}) contrast(${contrast})`,
             transform: "scale(1.08)",
           }}
-          onError={(e) => {
-            // @ts-ignore
-            console.error("Planet orb video error:", e?.currentTarget?.error);
-          }}
         />
       </div>
 
-      {/* Rim + glow (matches meter vibe) */}
       <div className="pointer-events-none absolute inset-0 rounded-full orbRim" />
-
-      {/* Readability scrim (keeps text readable without looking like a label box) */}
       <div className="pointer-events-none absolute inset-0 rounded-full orbScrim" />
 
-      {/* Text (stable, high-contrast) */}
       <div className="relative z-10 flex flex-col items-center justify-center leading-none">
         <span className="orbTextTop">{labelTop}</span>
         <span className="orbTextBottom">{labelBottom}</span>
@@ -341,10 +352,6 @@ function TapShareSheet({
   );
 }
 
-/* -------------------------------
-   Armed state
-   ------------------------------- */
-
 interface TapShareArmedProps {
   selectedFields: Set<TapShareField>;
   secondsRemaining: number;
@@ -383,12 +390,9 @@ function TapShareArmedState({
           </div>
 
           <div className="space-y-1">
-            <h2 className="text-sm font-semibold text-slate-50">
-              Ready to Share
-            </h2>
+            <h2 className="text-sm font-semibold text-slate-50">Ready to Share</h2>
             <p className="text-xs text-slate-300">
-              Have them tap your band now. This share works once, then turns
-              off.
+              Have them tap your band now. This share works once, then turns off.
             </p>
           </div>
 
@@ -402,9 +406,7 @@ function TapShareArmedState({
           <div className="space-y-2">
             <p className="text-xs text-slate-300">
               Time remaining:{" "}
-              <span className="font-semibold text-sky-200">
-                {secondsRemaining}s
-              </span>
+              <span className="font-semibold text-sky-200">{secondsRemaining}s</span>
             </p>
             <button
               type="button"
@@ -455,10 +457,8 @@ function getLocalDayKey(): string {
 }
 
 /* -------------------------------
-   Dashboard Inner (uses useSearchParams)
+   Dashboard Inner
    ------------------------------- */
-
-type SyncStatus = "idle" | "syncing";
 
 function DashboardInner() {
   const router = useRouter();
@@ -477,35 +477,10 @@ function DashboardInner() {
     if (resolved) localStorage.setItem(LAST_BAND_STORAGE_KEY, resolved);
   }, [bandIdFromUrl]);
 
-  const bandName = "NUMA BAND";
-  const displayName = "Tyler";
-  const sign = "Aquarius";
-  const birthday = "Feb 5";
-
-  const todayLabel = "Today’s Alignment";
-  const horoscopeTitle = "Quiet Confidence in Motion";
-  const horoscopeSummary =
-    "Today favors calm, deliberate moves instead of big dramatic swings. Keep your plans simple, follow through once, and let your quiet consistency stand out on its own.";
-
-  // Example meter values (swap later with real values)
-  const energyLevel = 0.86;
-  const focusLevel = 0.62;
-  const connectionLevel = 0.48;
-
   const todayKey = useMemo(() => getLocalDayKey(), []);
 
-  /* Stardust */
   const [hasScannedToday, setHasScannedToday] = useState(false);
-  const [stardustCardName, setStardustCardName] = useState<string | null>(null);
-  const [stardustTagline, setStardustTagline] = useState<string | null>(null);
   const [pinnedCardSlug, setPinnedCardSlug] = useState<CardId | null>(null);
-
-  /* In-dashboard analysis flow */
-  const [analysisStep, setAnalysisStep] = useState<
-    "idle" | "horoscope" | "meters" | "sky" | "reveal"
-  >("idle");
-
-  const analyzing = analysisStep !== "idle";
 
   useEffect(() => {
     try {
@@ -522,8 +497,6 @@ function DashboardInner() {
 
       setPinnedCardSlug(parsed.pinnedCardSlug ?? null);
       setHasScannedToday(Boolean(parsed.hasScannedToday));
-      setStardustCardName(parsed.stardustCardName ?? null);
-      setStardustTagline(parsed.stardustTagline ?? null);
     } catch {
       localStorage.removeItem(STARDUST_STORAGE_KEY);
     }
@@ -534,68 +507,35 @@ function DashboardInner() {
     localStorage.setItem(STARDUST_STORAGE_KEY, JSON.stringify(payload));
   };
 
-  const startAnalysisFlow = () => {
+  // ✅ Lazy-load card registry only when scan completes
+  const startAnalysisFlow = async () => {
     if (hasScannedToday) return;
-    if (analysisStep !== "idle") return;
 
-    setAnalysisStep("horoscope");
+    const mod = await import("../../lib/cardRegistry");
+    const CARD_REGISTRY = mod.CARD_REGISTRY as Record<string, any>;
+    const ids = Object.keys(CARD_REGISTRY) as CardId[];
+    const chosen = ids[Math.floor(Math.random() * ids.length)];
+    const picked = CARD_REGISTRY[chosen];
 
-    const t1 = setTimeout(() => setAnalysisStep("meters"), 850);
-    const t2 = setTimeout(() => setAnalysisStep("sky"), 1700);
-    const t3 = setTimeout(() => setAnalysisStep("reveal"), 2550);
+    setPinnedCardSlug(chosen);
+    setHasScannedToday(true);
 
-    const tDone = setTimeout(() => {
-      const ids = Object.keys(CARD_REGISTRY) as CardId[];
-      const chosen = ids[Math.floor(Math.random() * ids.length)];
-      const picked = CARD_REGISTRY[chosen] as any;
-
-      setPinnedCardSlug(chosen);
-      setHasScannedToday(true);
-      setStardustCardName(picked?.title ?? String(chosen).toUpperCase());
-      setStardustTagline(
-        picked?.StardustAction ?? "Your Stardust Action is set."
-      );
-
-      persistStardust({
-        pinnedCardSlug: chosen,
-        hasScannedToday: true,
-        stardustCardName: picked?.title ?? String(chosen).toUpperCase(),
-        stardustTagline:
-          picked?.StardustAction ?? "Your Stardust Action is set.",
-      });
-
-      setAnalysisStep("idle");
-    }, 3350);
-
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-      clearTimeout(tDone);
-    };
+    persistStardust({
+      pinnedCardSlug: chosen,
+      hasScannedToday: true,
+      stardustCardName: picked?.title ?? String(chosen).toUpperCase(),
+      stardustTagline: picked?.StardustAction ?? "Your Stardust Action is set.",
+    });
   };
-
-  const analysisLabel =
-    analysisStep === "horoscope"
-      ? "Analyzing horoscope…"
-      : analysisStep === "meters"
-      ? "Analyzing daily meters…"
-      : analysisStep === "sky"
-      ? "Analyzing current sky…"
-      : analysisStep === "reveal"
-      ? "Selecting your card…"
-      : "";
 
   /* -------------------------------
      Tap Share state + Supabase sync
+     ✅ Lazy-load Supabase SDK only when needed
      ------------------------------- */
 
   const [showTapShare, setShowTapShare] = useState(false);
-  const [selectedProfile, setSelectedProfile] =
-    useState<TapShareProfile>("none");
-  const [selectedFields, setSelectedFields] = useState<Set<TapShareField>>(
-    () => new Set()
-  );
+  const [selectedProfile, setSelectedProfile] = useState<TapShareProfile>("none");
+  const [selectedFields, setSelectedFields] = useState<Set<TapShareField>>(() => new Set());
 
   const [isArmed, setIsArmed] = useState(false);
   const [secondsRemaining, setSecondsRemaining] = useState(60);
@@ -603,36 +543,35 @@ function DashboardInner() {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("idle");
   const [syncError, setSyncError] = useState<string | null>(null);
 
+  const runningTurnOffRef = useRef(false);
+
   const syncTapShareToSupabase = async (next: {
     tapshare_armed: boolean;
     fields: TapShareField[];
     armed_until: Date | null;
   }) => {
-    const supabase = getSupabase();
-    if (!supabase) {
-      throw new Error(
-        "Missing NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY."
-      );
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!url || !key) {
+      throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY.");
     }
     if (!bandId) {
-      throw new Error(
-        "Missing band id. Open /dashboard?band=YOUR_BAND_ID at least once."
-      );
+      throw new Error("Missing band id. Open /dashboard?band=YOUR_BAND_ID at least once.");
     }
+
+    // ✅ Import Supabase only when user uses Tap Share
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabase = createClient(url, key);
 
     const payload = {
       band_id: bandId,
       tapshare_armed: next.tapshare_armed,
       tapshare_fields: next.fields,
-      tapshare_armed_until: next.armed_until
-        ? next.armed_until.toISOString()
-        : null,
+      tapshare_armed_until: next.armed_until ? next.armed_until.toISOString() : null,
       updated_at: new Date().toISOString(),
     };
 
-    const { error } = await supabase
-      .from(BAND_STATE_TABLE)
-      .upsert(payload, { onConflict: "band_id" });
+    const { error } = await supabase.from(BAND_STATE_TABLE).upsert(payload, { onConflict: "band_id" });
 
     if (error) throw error;
   };
@@ -683,15 +622,16 @@ function DashboardInner() {
       setSyncStatus("idle");
     } catch (e: any) {
       setSyncStatus("idle");
-      setSyncError(
-        e?.message || "Arm failed. Check band id + Supabase configuration."
-      );
+      setSyncError(e?.message || "Arm failed. Check band id + Supabase configuration.");
       setIsArmed(false);
       setSecondsRemaining(60);
     }
   };
 
   const turnOffAndSyncSilent = async () => {
+    if (runningTurnOffRef.current) return;
+    runningTurnOffRef.current = true;
+
     setSyncError(null);
     setSyncStatus("syncing");
 
@@ -709,9 +649,9 @@ function DashboardInner() {
       setSyncStatus("idle");
     } catch (e: any) {
       setSyncStatus("idle");
-      setSyncError(
-        e?.message || "Turn off failed. Check band id + Supabase configuration."
-      );
+      setSyncError(e?.message || "Turn off failed. Check band id + Supabase configuration.");
+    } finally {
+      runningTurnOffRef.current = false;
     }
   };
 
@@ -744,9 +684,31 @@ function DashboardInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isArmed]);
 
-  /* Settings menu state */
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const closeSettingsMenu = () => setShowSettingsMenu(false);
+
+  // Lazy-load card registry for rendering pinned card (only if needed)
+  const [cardRegistryCache, setCardRegistryCache] = useState<any>(null);
+  useEffect(() => {
+    if (!pinnedCardSlug) return;
+    let alive = true;
+    (async () => {
+      const mod = await import("../../lib/cardRegistry");
+      if (!alive) return;
+      setCardRegistryCache(mod.CARD_REGISTRY);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [pinnedCardSlug]);
+
+  const pinnedCard = pinnedCardSlug && cardRegistryCache ? cardRegistryCache[pinnedCardSlug] : null;
+
+  // ✅ Placeholder instrument values (we’ll wire real moon phase later)
+  const moonPhaseLabel = "Waxing Crescent";
+  const toneName = "Midnight Gold";
+  const toneHex = "#D6B35A";
+  const signalNumber = 7;
 
   return (
     <>
@@ -765,28 +727,18 @@ function DashboardInner() {
         <main className="relative z-10 mx-auto flex min-h-screen max-w-3xl flex-col gap-5 px-4 py-6 sm:py-8">
           <section className="flex items-start justify-between gap-3">
             <div className="space-y-1 text-left">
-              <p className="text-[11px] uppercase tracking-[0.25em] text-slate-300">
-                {bandName}
-              </p>
-              <h1 className="text-2xl font-semibold text-slate-50 sm:text-3xl">
-                {displayName} – {sign}
-              </h1>
-              <p className="text-xs text-slate-300 sm:text-sm">
-                Born {birthday} • {todayLabel}
-              </p>
+              <p className="text-[11px] uppercase tracking-[0.25em] text-slate-300">NUMA BAND</p>
+              <h1 className="text-2xl font-semibold text-slate-50 sm:text-3xl">Tyler – Aquarius</h1>
+              <p className="text-xs text-slate-300 sm:text-sm">Born Feb 5 • Today’s Alignment</p>
 
               {bandId ? (
                 <p className="text-[11px] text-slate-400">
-                  Band ID:{" "}
-                  <span className="font-semibold text-slate-200">{bandId}</span>
+                  Band ID: <span className="font-semibold text-slate-200">{bandId}</span>
                 </p>
               ) : (
                 <p className="text-[11px] text-slate-500">
                   Tap Share needs a band id. Open{" "}
-                  <span className="font-semibold text-slate-400">
-                    /dashboard?band=YOUR_BAND_ID
-                  </span>
-                  .
+                  <span className="font-semibold text-slate-400">/dashboard?band=YOUR_BAND_ID</span>.
                 </p>
               )}
             </div>
@@ -810,22 +762,20 @@ function DashboardInner() {
                   <p className="text-[11px] uppercase tracking-[0.28em] text-yellow-100/95">
                     Today’s Alignment
                   </p>
-                  <p className="text-xs sm:text-[13px] text-slate-100/90"></p>
                 </div>
 
                 <div className="space-y-3">
                   <h2 className="text-xl sm:text-2xl font-semibold text-slate-50">
-                    {horoscopeTitle}
+                    Quiet Confidence in Motion
                   </h2>
                   <p className="text-base sm:text-lg leading-relaxed text-slate-100/95">
-                    {horoscopeSummary}
+                    Today favors calm, deliberate moves instead of big dramatic swings. Keep your plans
+                    simple, follow through once, and let your quiet consistency stand out on its own.
                   </p>
                 </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-3">
-                  <p className="text-[12px] text-slate-100/80">
-                    Based on today’s real sky positions.
-                  </p>
+                  <p className="text-[12px] text-slate-100/80">Based on today’s real sky positions.</p>
                   <p className="text-[12px] text-slate-300/80">
                     Tap your band any time today to reopen this reading.
                   </p>
@@ -834,101 +784,41 @@ function DashboardInner() {
             </div>
           </section>
 
-          {/* METERS */}
+          {/* ✅ INSTRUMENT PANEL (replaces meters) */}
           <section>
-            <div className="relative p-4 sm:p-6">
-              <div className="mb-4">
-                <p className="metersTitle">Daily Meters</p>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3 sm:gap-6">
-                {/* ENERGY */}
-                <div className="flex flex-col items-center text-center">
-                  <div className="mb-2">
-                    <div className="meterHead">ENERGY</div>
-                    <div className="mt-0.5 text-[12px] text-slate-200/80">
-                      Capacity to act
-                    </div>
-                  </div>
-
-                  <VideoRingMeter
-                    progress={energyLevel}
-                    directive="Make moves"
-                    tickCount={10}
-                    videoSrc="/textures/solar-flare-animated.mp4"
-                    videoHueRotateDeg={0}
-                  />
-                </div>
-
-                {/* FOCUS */}
-                <div className="flex flex-col items-center text-center">
-                  <div className="mb-2">
-                    <div className="meterHead">FOCUS</div>
-                    <div className="mt-0.5 text-[12px] text-slate-200/80">
-                      Precision attention
-                    </div>
-                  </div>
-
-                  <VideoRingMeter
-                    progress={focusLevel}
-                    directive="Lock in"
-                    tickCount={10}
-                    videoSrc="/textures/solar-flare-animated.mp4"
-                    videoHueRotateDeg={210}
-                  />
-                </div>
-
-                {/* CONNECTION */}
-                <div className="flex flex-col items-center text-center">
-                  <div className="mb-2">
-                    <div className="meterHead">CONNECTION</div>
-                    <div className="mt-0.5 text-[12px] text-slate-200/80">
-                      Social resonance
-                    </div>
-                  </div>
-
-                  <VideoRingMeter
-                    progress={connectionLevel}
-                    directive="Reach out"
-                    tickCount={10}
-                    videoSrc="/textures/solar-flare-animated.mp4"
-                    videoHueRotateDeg={305}
-                  />
-                </div>
-              </div>
-            </div>
+            <DailyInstrumentPanel
+              moonPhaseLabel={moonPhaseLabel}
+              toneName={toneName}
+              toneHex={toneHex}
+              signalNumber={signalNumber}
+            />
           </section>
 
-          {/* ✅ STARDUST BUTTON / CARD (replaced with component) */}
+          {/* STARDUST */}
           <section>
             <StardustScanCTA
               onScanComplete={() => {
-                // Keep existing behavior
                 startAnalysisFlow();
               }}
               defaultState={hasScannedToday ? "scanned" : "idle"}
             />
           </section>
 
-          {pinnedCardSlug && CARD_REGISTRY[pinnedCardSlug] && (
+          {pinnedCardSlug && pinnedCard && (
             <section>
-              <PinnedCard card={CARD_REGISTRY[pinnedCardSlug]} />
+              <PinnedCard card={pinnedCard} />
             </section>
           )}
 
           {/* TAP SHARE + STAR SYNC */}
           <section className="pb-4">
             <div className="grid gap-4 sm:grid-cols-2">
-              {/* TAP SHARE CARD */}
               <div className="h-full rounded-3xl border border-yellow-200/60 bg-slate-950/85 p-4 sm:p-5 backdrop-blur-md shadow-[0_0_30px_rgba(0,0,0,0.8)]">
                 <div className="flex h-full flex-col items-center text-center space-y-3">
                   <div className="space-y-1">
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-yellow-100/85">
-                      Tap Share
-                    </p>
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-yellow-100/85">Tap Share</p>
                     <p className="text-xs text-slate-200">
-                      Arm your band to share just the details you choose on your
-                      next tap.
+                      Arm your band to share just the details you choose on your next tap.
                     </p>
                   </div>
 
@@ -942,12 +832,7 @@ function DashboardInner() {
                       setSecondsRemaining(60);
                     }}
                     disabled={!bandId}
-                    title={
-                      bandId
-                        ? "Open Tap Share"
-                        : "Open /dashboard?band=YOUR_BAND_ID first"
-                    }
-                    // Warm / solar
+                    title={bandId ? "Open Tap Share" : "Open /dashboard?band=YOUR_BAND_ID first"}
                     hueRotateDeg={18}
                     saturate={1.18}
                     brightness={1.07}
@@ -957,22 +842,17 @@ function DashboardInner() {
                   />
 
                   <p className="text-[11px] text-slate-500">
-                    One-armed share that turns off after a single tap—every tap
-                    is intentional.
+                    One-armed share that turns off after a single tap—every tap is intentional.
                   </p>
                 </div>
               </div>
 
-              {/* STAR SYNC CARD */}
               <div className="h-full rounded-3xl border border-sky-200/60 bg-slate-950/85 p-4 sm:p-5 backdrop-blur-md shadow-[0_0_30px_rgba(15,23,42,0.9)]">
                 <div className="flex h-full flex-col items-center text-center space-y-3">
                   <div className="space-y-1">
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-sky-200/85">
-                      Star Sync
-                    </p>
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-sky-200/85">Star Sync</p>
                     <p className="text-xs text-slate-200">
-                      Compare your sign’s alignment with someone else’s for
-                      today.
+                      Compare your sign’s alignment with someone else’s for today.
                     </p>
                   </div>
 
@@ -980,7 +860,6 @@ function DashboardInner() {
                     labelTop="STAR"
                     labelBottom="SYNC"
                     onClick={() => router.push("/star-sync")}
-                    // Cool / cosmic
                     hueRotateDeg={205}
                     saturate={1.12}
                     brightness={1.03}
@@ -990,9 +869,8 @@ function DashboardInner() {
                   />
 
                   <p className="text-[11px] text-slate-500">
-                    Enter their sign or birthday—or have them tap their NUMA
-                    band to your phone—to see how your energies align under
-                    today’s sky.
+                    Enter their sign or birthday—or have them tap their NUMA band to your phone—to see
+                    how your energies align under today’s sky.
                   </p>
                 </div>
               </div>
@@ -1001,7 +879,7 @@ function DashboardInner() {
         </main>
       </div>
 
-      {/* Global styles */}
+      {/* Global styles (unchanged) */}
       <style jsx global>{`
         .tapshare-overlay {
           position: fixed;
@@ -1011,14 +889,12 @@ function DashboardInner() {
           align-items: flex-end;
           justify-content: center;
         }
-
         .tapshare-backdrop {
           position: absolute;
           inset: 0;
           background: rgba(0, 0, 0, 0.6);
           backdrop-filter: blur(6px);
         }
-
         .tapshare-sheet {
           position: relative;
           z-index: 50;
@@ -1032,12 +908,10 @@ function DashboardInner() {
           box-shadow: 0 -18px 45px rgba(0, 0, 0, 0.9);
           animation: sheetEnter 0.3s ease-out;
         }
-
         .tapshare-armed {
           padding-top: 1.2rem;
           padding-bottom: 1.4rem;
         }
-
         @keyframes sheetEnter {
           0% {
             transform: translateY(16px);
@@ -1048,14 +922,12 @@ function DashboardInner() {
             opacity: 1;
           }
         }
-
         .ready-ring {
           border-radius: 9999px;
           border: 1px solid rgba(56, 189, 248, 0.7);
           box-shadow: 0 0 25px rgba(56, 189, 248, 0.7);
           animation: readySpin 9s linear infinite;
         }
-
         @keyframes readySpin {
           0% {
             transform: rotate(0deg);
@@ -1064,33 +936,6 @@ function DashboardInner() {
             transform: rotate(360deg);
           }
         }
-
-        .scanDot {
-          width: 7px;
-          height: 7px;
-          border-radius: 9999px;
-          background: rgba(56, 189, 248, 0.95);
-          box-shadow: 0 0 16px rgba(56, 189, 248, 0.75);
-          display: inline-block;
-          animation: scanDotPulse 0.9s ease-in-out infinite;
-        }
-
-        @keyframes scanDotPulse {
-          0% {
-            transform: scale(0.85);
-            opacity: 0.55;
-          }
-          50% {
-            transform: scale(1.2);
-            opacity: 1;
-          }
-          100% {
-            transform: scale(0.85);
-            opacity: 0.55;
-          }
-        }
-
-        /* meters typography tuning (more readable) */
         .metersTitle {
           font-size: 14px;
           font-weight: 800;
@@ -1099,7 +944,6 @@ function DashboardInner() {
           color: rgba(255, 255, 255, 0.95);
           text-shadow: 0 2px 14px rgba(0, 0, 0, 0.75);
         }
-
         .meterHead {
           font-size: 12px;
           font-weight: 800;
@@ -1108,27 +952,19 @@ function DashboardInner() {
           color: rgba(255, 255, 255, 0.92);
           text-shadow: 0 2px 14px rgba(0, 0, 0, 0.8);
         }
-
-        /* Planet orb button styling */
         .planetOrb {
           border: 1px solid rgba(255, 255, 255, 0.22);
           box-shadow: 0 0 24px rgba(0, 0, 0, 0.65);
           transform: translateZ(0);
           will-change: transform, filter;
         }
-
         .planetOrb:hover {
-          box-shadow: 0 0 30px rgba(0, 0, 0, 0.65),
-            0 0 26px var(--orbGlow);
+          box-shadow: 0 0 30px rgba(0, 0, 0, 0.65), 0 0 26px var(--orbGlow);
         }
-
         .orbRim {
           border: 1px solid rgba(255, 255, 255, 0.26);
-          box-shadow: 0 0 18px var(--orbGlow),
-            inset 0 0 18px rgba(255, 255, 255, 0.08);
+          box-shadow: 0 0 18px var(--orbGlow), inset 0 0 18px rgba(255, 255, 255, 0.08);
         }
-
-        /* This is the readability layer (no “label box”, just a soft center calm) */
         .orbScrim {
           background: radial-gradient(
             circle at center,
@@ -1138,7 +974,6 @@ function DashboardInner() {
             rgba(2, 6, 23, 0) 78%
           );
         }
-
         .orbTextTop {
           font-size: 10px;
           font-weight: 800;
@@ -1147,7 +982,6 @@ function DashboardInner() {
           color: rgba(255, 255, 255, 0.95);
           text-shadow: 0 2px 12px rgba(0, 0, 0, 0.85);
         }
-
         .orbTextBottom {
           margin-top: 4px;
           font-size: 10px;
@@ -1159,7 +993,7 @@ function DashboardInner() {
         }
       `}</style>
 
-      {/* Tap Share overlay (sheet or armed state) */}
+      {/* Tap Share overlay */}
       {showTapShare &&
         (!isArmed ? (
           <TapShareSheet
@@ -1185,7 +1019,7 @@ function DashboardInner() {
           />
         ))}
 
-      {/* Settings menu overlay */}
+      {/* Settings menu overlay (unchanged UI) */}
       {showSettingsMenu && (
         <div className="settings-overlay">
           <div className="settings-backdrop" onClick={closeSettingsMenu} />
@@ -1193,12 +1027,8 @@ function DashboardInner() {
             <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-slate-500/40" />
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400">
-                  NUMA Settings
-                </p>
-                <p className="text-sm font-semibold text-slate-50">
-                  Tune your profile and dashboard.
-                </p>
+                <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400">NUMA Settings</p>
+                <p className="text-sm font-semibold text-slate-50">Tune your profile and dashboard.</p>
               </div>
               <button
                 type="button"
@@ -1245,29 +1075,9 @@ function DashboardInner() {
   );
 }
 
-/* -------------------------------
-   Export default Page with Suspense boundary
-   ------------------------------- */
-
 export default function DashboardClient() {
   return (
-    <Suspense
-      fallback={
-        <main
-          style={{
-            minHeight: "100vh",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontFamily: "system-ui, sans-serif",
-            padding: "1.5rem",
-            textAlign: "center",
-          }}
-        >
-          <p style={{ opacity: 0.7 }}>Loading dashboard…</p>
-        </main>
-      }
-    >
+    <Suspense fallback={null}>
       <DashboardInner />
     </Suspense>
   );
