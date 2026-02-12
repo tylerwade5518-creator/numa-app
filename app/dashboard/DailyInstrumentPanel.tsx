@@ -6,6 +6,11 @@ import React, { useMemo } from "react";
 type Props = {
   moonPhaseLabel?: string | null;
   showLive?: boolean;
+
+  // ✅ Accept extra props that DashboardClient/DashboardClient.tsx passes
+  toneName?: string;
+  toneHex?: string;
+  signalNumber?: number;
 };
 
 type PhaseKey =
@@ -20,8 +25,6 @@ type PhaseKey =
 
 function normalizePhase(label?: string | null): PhaseKey {
   const v = (label ?? "").trim().toLowerCase();
-
-  // Default to First Quarter if undefined
   if (!v) return "first_quarter";
 
   if (v.includes("new")) return "new";
@@ -81,10 +84,9 @@ export default function DailyInstrumentPanel({ moonPhaseLabel }: Props) {
       </div>
 
       <style jsx>{`
-        /* Create a stacking context so later dashboard sections can sit ABOVE this moon art */
         .wrap {
           position: relative;
-          z-index: 0; /* key: prevents moon art from floating above the next card */
+          z-index: 0;
           width: calc(100% + 2rem);
           margin-left: -1rem;
           margin-right: -1rem;
@@ -100,7 +102,6 @@ export default function DailyInstrumentPanel({ moonPhaseLabel }: Props) {
           z-index: 0;
         }
 
-        /* Moon art stays behind everything else on the page */
         .moonLayer {
           position: absolute;
           inset: 0;
@@ -109,7 +110,6 @@ export default function DailyInstrumentPanel({ moonPhaseLabel }: Props) {
           z-index: 0;
         }
 
-        /* Shared geometry: keep halo perfectly circular on ALL screen sizes */
         .haloCore,
         .rim,
         .rimPulse,
@@ -119,12 +119,9 @@ export default function DailyInstrumentPanel({ moonPhaseLabel }: Props) {
           right: -8px;
           top: 50%;
           transform: translateY(-50%) scale(0.82);
-
-          /* ✅ FIX #1: circle stays a circle (no fixed height fighting max-width) */
           width: min(420px, 92%);
           aspect-ratio: 1 / 1;
           height: auto;
-
           border-radius: 999px;
         }
 
@@ -133,17 +130,14 @@ export default function DailyInstrumentPanel({ moonPhaseLabel }: Props) {
           right: -8px;
           top: 50%;
           transform: translateY(-50%) scale(0.82);
-
           width: min(420px, 92%);
           height: auto;
-
           object-fit: contain;
           opacity: 0.995;
           filter: drop-shadow(0 24px 40px rgba(0, 0, 0, 0.78));
-          z-index: 2; /* below HUD, still within this panel */
+          z-index: 2;
         }
 
-        /* ✅ FIX #1: halo as a uniform ring, symmetrical thickness */
         .haloCore {
           background: radial-gradient(
             circle at 50% 50%,
@@ -163,7 +157,7 @@ export default function DailyInstrumentPanel({ moonPhaseLabel }: Props) {
           background: radial-gradient(
             circle at 50% 50%,
             rgba(255, 255, 255, 0) 60%,
-            rgba(255, 255, 255, 0.10) 68%,
+            rgba(255, 255, 255, 0.1) 68%,
             rgba(56, 189, 248, 0.16) 74%,
             rgba(56, 189, 248, 0) 80%
           );
@@ -225,11 +219,10 @@ export default function DailyInstrumentPanel({ moonPhaseLabel }: Props) {
           }
         }
 
-        /* ✅ FIX #2: blurred bleed is behind the next card (never on top) */
         .moonBlur {
           filter: blur(12px);
           opacity: 0.22;
-          z-index: -1; /* pushes the bleed behind panel stacking */
+          z-index: -1;
           transform: translateY(-50%) scale(0.82) translateY(18px);
           mask-image: linear-gradient(
             to bottom,
@@ -240,7 +233,6 @@ export default function DailyInstrumentPanel({ moonPhaseLabel }: Props) {
           );
         }
 
-        /* HUD always above moon art */
         .hud {
           position: absolute;
           left: 16px;
@@ -263,6 +255,7 @@ export default function DailyInstrumentPanel({ moonPhaseLabel }: Props) {
         }
 
         .hairline {
+          position: relative;
           width: 120px;
           height: 1px;
           background: linear-gradient(
@@ -272,6 +265,7 @@ export default function DailyInstrumentPanel({ moonPhaseLabel }: Props) {
             rgba(250, 204, 21, 0.3),
             rgba(250, 204, 21, 0)
           );
+          overflow: hidden;
         }
 
         .hairScan {
@@ -310,30 +304,6 @@ export default function DailyInstrumentPanel({ moonPhaseLabel }: Props) {
           inset: 0;
           pointer-events: none;
           opacity: 0.04;
-        }
-
-        @media (max-width: 560px) {
-          .hero {
-            height: 228px;
-          }
-
-          .hud {
-            top: 48px;
-          }
-
-          .value {
-            font-size: 26px;
-          }
-        }
-
-        @media (max-width: 420px) {
-          .hero {
-            height: 218px;
-          }
-
-          .value {
-            font-size: 24px;
-          }
         }
       `}</style>
     </section>
