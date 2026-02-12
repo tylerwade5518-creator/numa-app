@@ -5,33 +5,70 @@ import React, { useEffect, useMemo, useRef } from "react";
 
 type Labels = { low: string; mid: string; high: string };
 
+type Variant = "energy" | "luck" | "social";
+
 type Props = {
-  progress: number; // 0..1
-  directive: string;
+  // ✅ Preferred (current)
+  progress?: number; // 0..1
+  directive?: string;
+
+  // ✅ Back-compat (older calls)
+  value?: number; // 0..1
+  label?: string;
+
   labels?: Labels;
   tickCount?: number;
-  videoSrc: string;
-  videoHueRotateDeg?: number;
+
+  // ✅ Visual controls
+  videoSrc?: string; // default locked to solar flare
+  videoHueRotateDeg?: number; // overrides variant if provided
+  variant?: Variant;
+
+  // ✅ Layout hooks (parent can overlap meters without changing visuals)
+  size?: number; // default 132
+  className?: string;
 };
 
-function clamp01(n: number) {
-  if (Number.isNaN(n)) return 0;
-  return Math.max(0, Math.min(1, n));
+function clamp01(n: unknown) {
+  const v = typeof n === "number" ? n : Number(n);
+  if (!Number.isFinite(v)) return 0;
+  return Math.max(0, Math.min(1, v));
+}
+
+function variantHue(variant?: Variant): number {
+  // One texture, 3 colorways. Tuned for: Energy (cool), Luck (gold), Social (purple/pink).
+  switch (variant) {
+    case "energy":
+      return 210; // cool / electric
+    case "luck":
+      return 0; // solar / gold
+    case "social":
+      return 315; // purple/pink
+    default:
+      return 0;
+  }
 }
 
 export default function VideoRingMeter({
   progress,
   directive,
+  value,
+  label,
   tickCount = 10,
-  videoSrc,
-  videoHueRotateDeg = 0,
+  videoSrc = "/textures/solar-flare-animated.mp4",
+  videoHueRotateDeg,
+  variant,
+  size = 132,
+  className,
 }: Props) {
-  const p = clamp01(progress);
+  const p = clamp01(progress ?? value);
 
   const pct = useMemo(() => {
     const v = Math.round(p * 100);
     return Math.max(1, Math.min(100, v));
   }, [p]);
+
+  const shownDirective = (directive ?? label ?? "").trim();
 
   const ringVideoRef = useRef<HTMLVideoElement | null>(null);
   const centerVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -51,31 +88,35 @@ export default function VideoRingMeter({
     tryPlay(centerVideoRef.current);
   }, []);
 
-  // Geometry aligned with your original
-  const SIZE = 132;
-  const CX = 66;
-  const CY = 66;
+  // Geometry (scaled from original 132 template)
+  const SIZE = size;
+  const CX = SIZE / 2;
+  const CY = SIZE / 2;
 
-  const ringMidR = 60;
-  const ringThickness = 30;
+  // Preserve the original ratios
+  const ringMidR = (60 / 132) * SIZE;
+  const ringThickness = (30 / 132) * SIZE;
 
-  const innerDiskInset = 14;
-  const innerDiskR = CX - innerDiskInset; // 52
+  const innerDiskInset = (14 / 132) * SIZE;
+  const innerDiskR = CX - innerDiskInset;
 
   const angleDeg = useMemo(() => Math.max(0.001, p * 360), [p]);
 
+  const hue =
+    typeof videoHueRotateDeg === "number" ? videoHueRotateDeg : variantHue(variant);
+
   const ringVideoStyle: React.CSSProperties = {
-    filter: `hue-rotate(${videoHueRotateDeg}deg) saturate(1.3) brightness(1.15)`,
+    filter: `hue-rotate(${hue}deg) saturate(1.32) brightness(1.12) contrast(1.08)`,
     transform: "scale(1.22) translateZ(0)",
   };
 
   const centerVideoStyle: React.CSSProperties = {
-    filter: `hue-rotate(${videoHueRotateDeg}deg) saturate(1.15) brightness(0.95) contrast(1.05)`,
+    filter: `hue-rotate(${hue}deg) saturate(1.18) brightness(0.92) contrast(1.08)`,
     transform: "scale(1.12) translateZ(0)",
   };
 
   const centerMaskStyle = useMemo(() => {
-    const feather = 10;
+    const feather = (10 / 132) * SIZE;
     const hard = Math.max(0, innerDiskR - feather);
     const soft = innerDiskR;
 
@@ -85,7 +126,6 @@ export default function VideoRingMeter({
       rgba(255,255,255,0) ${soft}px
     )`;
 
-    // TS-safe: cast once (Safari needs -webkit-)
     return {
       WebkitMaskImage: m,
       maskImage: m,
@@ -98,13 +138,12 @@ export default function VideoRingMeter({
       transform: "translateZ(0)",
       WebkitTransform: "translateZ(0)",
     } as React.CSSProperties;
-  }, [innerDiskR, CX, CY]);
+  }, [innerDiskR, CX, CY, SIZE]);
 
-  // Build donut + progress + cap masks
   const masks = useMemo(() => {
     const outer = ringMidR + ringThickness / 2;
     const inner = ringMidR - ringThickness / 2;
-    const feather = 2.75;
+    const feather = (2.75 / 132) * SIZE;
 
     const donutMask = `radial-gradient(circle at ${CX}px ${CY}px,
       rgba(255,255,255,0) 0px,
@@ -128,7 +167,7 @@ export default function VideoRingMeter({
     const ey = CY + Math.sin(rad) * ringMidR;
 
     const capR = ringThickness / 2;
-    const capFeather = 2.0;
+    const capFeather = (2.0 / 132) * SIZE;
 
     const capMask = [
       `radial-gradient(circle at ${sx}px ${sy}px,
@@ -144,37 +183,27 @@ export default function VideoRingMeter({
     ].join(",");
 
     return { donutMask, progressMask, capMask };
-  }, [CX, CY, ringMidR, ringThickness, angleDeg]);
+  }, [CX, CY, ringMidR, ringThickness, angleDeg, SIZE]);
 
   const showCaps = p > 0.01;
 
-  // IMPORTANT:
-  // React.CSSProperties typings don't include WebkitMaskComposite or multi-value sizes.
-  // So we build a plain object and cast once.
   const ringMaskStyle = useMemo(() => {
     const images = showCaps
       ? `${masks.donutMask}, ${masks.progressMask}, ${masks.capMask}`
       : `${masks.donutMask}, ${masks.progressMask}`;
 
-    // For WebKit: composites are between layer1->layer2, then result->layer3
     const composites = showCaps ? "source-in, source-over" : "source-in";
 
     const style: any = {
       WebkitMaskImage: images,
       maskImage: images,
-
       WebkitMaskRepeat: "no-repeat",
       maskRepeat: "no-repeat",
-
-      // Provide 3 entries even if caps hidden; extra is harmless
       WebkitMaskSize: "100% 100%, 100% 100%, 100% 100%",
       maskSize: "100% 100%, 100% 100%, 100% 100%",
-
       WebkitMaskPosition: "center, center, center",
       maskPosition: "center, center, center",
-
       WebkitMaskComposite: composites,
-
       transform: "translateZ(0)",
       WebkitTransform: "translateZ(0)",
       willChange: "transform",
@@ -184,12 +213,12 @@ export default function VideoRingMeter({
   }, [masks.donutMask, masks.progressMask, masks.capMask, showCaps]);
 
   return (
-    <div className="relative flex items-center justify-center">
-      <div className="relative h-[132px] w-[132px]" style={{ width: SIZE, height: SIZE }}>
+    <div className={"relative flex items-center justify-center " + (className ?? "")}>
+      <div className="relative" style={{ width: SIZE, height: SIZE }}>
         <div className="absolute inset-0 rounded-full bg-black/35" />
 
         {/* Center plasma */}
-        <div className="absolute inset-0 rounded-full overflow-hidden">
+        <div className="absolute inset-0 overflow-hidden rounded-full">
           <div className="absolute inset-0" style={centerMaskStyle}>
             <video
               ref={centerVideoRef}
@@ -207,17 +236,25 @@ export default function VideoRingMeter({
         </div>
 
         {/* Inner disk */}
-        <div className="absolute inset-[14px] rounded-full bg-slate-950/55 border border-white/8" />
+        <div
+          className="absolute rounded-full border border-white/8 bg-slate-950/55"
+          style={{ inset: innerDiskInset }}
+        />
 
         {/* Tick ring */}
-        <svg className="absolute inset-0" viewBox="0 0 132 132" fill="none" aria-hidden="true">
+        <svg
+          className="absolute inset-0"
+          viewBox={`0 0 ${SIZE} ${SIZE}`}
+          fill="none"
+          aria-hidden="true"
+        >
           <g opacity="0.55">
             {Array.from({ length: tickCount }).map((_, i) => {
               const a = (i / tickCount) * Math.PI * 2 - Math.PI / 2;
-              const x1 = 66 + Math.cos(a) * 56;
-              const y1 = 66 + Math.sin(a) * 56;
-              const x2 = 66 + Math.cos(a) * 50;
-              const y2 = 66 + Math.sin(a) * 50;
+              const x1 = CX + Math.cos(a) * ((56 / 132) * SIZE);
+              const y1 = CY + Math.sin(a) * ((56 / 132) * SIZE);
+              const x2 = CX + Math.cos(a) * ((50 / 132) * SIZE);
+              const y2 = CY + Math.sin(a) * ((50 / 132) * SIZE);
               return (
                 <line
                   key={i}
@@ -226,17 +263,23 @@ export default function VideoRingMeter({
                   x2={x2}
                   y2={y2}
                   stroke="rgba(255,255,255,0.22)"
-                  strokeWidth="2"
+                  strokeWidth={(2 / 132) * SIZE}
                   strokeLinecap="round"
                 />
               );
             })}
           </g>
-          <circle cx="66" cy="66" r="40" stroke="rgba(255,255,255,0.10)" strokeWidth="2" />
+          <circle
+            cx={CX}
+            cy={CY}
+            r={(40 / 132) * SIZE}
+            stroke="rgba(255,255,255,0.10)"
+            strokeWidth={(2 / 132) * SIZE}
+          />
         </svg>
 
         {/* Ring */}
-        <div className="absolute inset-0 rounded-full overflow-hidden">
+        <div className="absolute inset-0 overflow-hidden rounded-full">
           <div className="absolute inset-0" style={ringMaskStyle}>
             <div className="relative h-full w-full">
               <video
@@ -256,9 +299,9 @@ export default function VideoRingMeter({
         </div>
 
         {/* Center text */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-3">
+        <div className="absolute inset-0 flex flex-col items-center justify-center px-3 text-center">
           <div className="meterPct">{pct}%</div>
-          <div className="meterDirective">{directive}</div>
+          {shownDirective ? <div className="meterDirective">{shownDirective}</div> : null}
         </div>
       </div>
 

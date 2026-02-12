@@ -4,10 +4,7 @@
 import React, { useMemo } from "react";
 
 type Props = {
-  moonPhaseLabel: string; // e.g. "Waxing Crescent"
-  toneName: string; // e.g. "Midnight Gold"
-  toneHex: string; // e.g. "#D6B35A"
-  signalNumber: number; // e.g. 7
+  moonPhaseLabel?: string | null;
   showLive?: boolean;
 };
 
@@ -21,8 +18,12 @@ type PhaseKey =
   | "last_quarter"
   | "waning_crescent";
 
-function normalizePhase(label: string): PhaseKey {
-  const v = label.trim().toLowerCase();
+function normalizePhase(label?: string | null): PhaseKey {
+  const v = (label ?? "").trim().toLowerCase();
+
+  // Default to First Quarter if undefined
+  if (!v) return "first_quarter";
+
   if (v.includes("new")) return "new";
   if (v.includes("waxing") && v.includes("crescent")) return "waxing_crescent";
   if (v.includes("first") && v.includes("quarter")) return "first_quarter";
@@ -31,10 +32,10 @@ function normalizePhase(label: string): PhaseKey {
   if (v.includes("waning") && v.includes("gibbous")) return "waning_gibbous";
   if (v.includes("last") && v.includes("quarter")) return "last_quarter";
   if (v.includes("waning") && v.includes("crescent")) return "waning_crescent";
-  return "waxing_crescent";
+
+  return "first_quarter";
 }
 
-/** Public asset paths: /public/moons */
 const MOON_SRC: Record<PhaseKey, string> = {
   new: "/moons/moon-new.png",
   waxing_crescent: "/moons/moon-waxing-crescent.png",
@@ -46,369 +47,292 @@ const MOON_SRC: Record<PhaseKey, string> = {
   waning_crescent: "/moons/moon-waning-crescent.png",
 };
 
-export default function DailyInstrumentPanel({
-  moonPhaseLabel,
-  toneName,
-  toneHex,
-  signalNumber,
-  showLive = true,
-}: Props) {
-  const phaseKey = useMemo(() => normalizePhase(moonPhaseLabel), [moonPhaseLabel]);
+export default function DailyInstrumentPanel({ moonPhaseLabel }: Props) {
+  const safeLabel = (moonPhaseLabel ?? "").trim() || "First Quarter";
+
+  const phaseKey = useMemo(
+    () => normalizePhase(moonPhaseLabel),
+    [moonPhaseLabel]
+  );
+
   const moonSrc = useMemo(() => MOON_SRC[phaseKey], [phaseKey]);
 
   return (
-    <section className="dipWrap">
-      <header className="dipHeader">
-        <p className="dipTitle">DAILY INSTRUMENT PANEL</p>
+    <section className="wrap" aria-label={`Moon phase: ${safeLabel}`}>
+      <div className="hero">
+        <div className="moonLayer" aria-hidden="true">
+          <div className="haloCore" />
+          <img src={moonSrc} alt="" className="moon" draggable={false} />
+          <div className="rim" />
+          <div className="rimPulse" />
+          <div className="shimmer" />
+          <img src={moonSrc} alt="" className="moonBlur" draggable={false} />
+        </div>
 
-        {showLive && (
-          <div className="liveTech" aria-label="Live status">
-            <span className="livePing" aria-hidden="true" />
-            <span className="liveDot" aria-hidden="true" />
-            <span className="liveText">live</span>
-          </div>
-        )}
-      </header>
-
-      <div className="dipLayout">
-        {/* LEFT: Moon hero */}
-        <div className="moonHero" aria-label={`Moon phase: ${moonPhaseLabel}`}>
-          <div className="moonMeta">
-            <p className="kicker">MOON PHASE</p>
-            <p className="phaseLabel">{moonPhaseLabel}</p>
-          </div>
-
-          <div className="moonStage" aria-hidden="true">
-            <img src={moonSrc} alt="" className="moonImg" draggable={false} />
+        <div className="hud">
+          <p className="kicker">LUNAR PHASE</p>
+          <p className="value">{safeLabel}</p>
+          <div className="hairline">
+            <span className="hairScan" />
           </div>
         </div>
 
-        {/* RIGHT: Tone + Signal stacked */}
-        <div className="rightStack">
-          {/* Tone */}
-          <div className="miniCard">
-            <div className="miniTop">
-              <p className="kicker">TONE</p>
-            </div>
-
-            <div className="miniCenter">
-              <div
-                className="toneSwatch"
-                style={
-                  {
-                    ["--toneHex" as any]: toneHex,
-                  } as React.CSSProperties
-                }
-                aria-hidden="true"
-              >
-                <div className="toneSheen" />
-                <div className="toneEdge" />
-              </div>
-              <p className="miniValue">{toneName}</p>
-            </div>
-          </div>
-
-          {/* Signal */}
-          <div className="miniCard">
-            <div className="miniTop">
-              <p className="kicker">SIGNAL</p>
-            </div>
-
-            <div className="miniCenter signalRow">
-              <div className="signalNumber">{signalNumber}</div>
-              <div className="signalTicks" aria-hidden="true">
-                <span />
-                <span />
-                <span />
-              </div>
-            </div>
-          </div>
-        </div>
+        <div className="grain" />
       </div>
 
       <style jsx>{`
-        /* Transparent outer container (no “big block” background) */
-        .dipWrap {
-          border-radius: 24px;
-          padding: 14px 14px 12px;
-          border: 1px solid rgba(255, 255, 255, 0.08);
+        /* Create a stacking context so later dashboard sections can sit ABOVE this moon art */
+        .wrap {
+          position: relative;
+          z-index: 0; /* key: prevents moon art from floating above the next card */
+          width: calc(100% + 2rem);
+          margin-left: -1rem;
+          margin-right: -1rem;
+          padding: 0;
+          margin-top: 2px;
+        }
+
+        .hero {
+          position: relative;
+          height: 236px;
+          overflow: visible;
           background: transparent;
-          box-shadow: none;
+          z-index: 0;
         }
 
-        .dipHeader {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          margin-bottom: 10px;
-        }
-
-        .dipTitle {
-          margin: 0;
-          font-size: 12px;
-          font-weight: 800;
-          letter-spacing: 0.32em;
-          text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.92);
-          text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7);
-        }
-
-        /* Tech-style live indicator */
-        .liveTech {
-          position: relative;
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          padding: 6px 10px;
-          border-radius: 999px;
-          border: 1px solid rgba(255, 255, 255, 0.10);
-          background: rgba(2, 6, 23, 0.14);
-          backdrop-filter: blur(10px);
-        }
-
-        .liveText {
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.06em;
-          text-transform: lowercase;
-          color: rgba(255, 255, 255, 0.85);
-        }
-
-        .liveDot {
-          width: 7px;
-          height: 7px;
-          border-radius: 999px;
-          background: rgb(239, 68, 68);
-          box-shadow: 0 0 12px rgba(239, 68, 68, 0.45);
-        }
-
-        .livePing {
-          position: absolute;
-          left: 9px;
-          width: 7px;
-          height: 7px;
-          border-radius: 999px;
-          border: 1px solid rgba(239, 68, 68, 0.55);
-          animation: ping 1.6s ease-out infinite;
-          opacity: 0.0;
-        }
-
-        @keyframes ping {
-          0% { transform: scale(1); opacity: 0.0; }
-          15% { opacity: 0.9; }
-          100% { transform: scale(2.6); opacity: 0.0; }
-        }
-
-        /* Layout */
-        .dipLayout {
-          display: grid;
-          grid-template-columns: 1.55fr 1fr;
-          gap: 12px;
-          align-items: stretch;
-        }
-
-        /* Shared text */
-        .kicker {
-          margin: 0;
-          font-size: 10px;
-          font-weight: 900;
-          letter-spacing: 0.28em;
-          text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.72);
-        }
-
-        /* LEFT: Moon hero panel (subtle separation only) */
-        .moonHero {
-          position: relative;
-          overflow: hidden;
-          border-radius: 20px;
-          border: 1px solid rgba(255, 255, 255, 0.10);
-          background: rgba(2, 6, 23, 0.10); /* light separation like meters */
-          backdrop-filter: blur(10px);
-          box-shadow: 0 0 26px rgba(0, 0, 0, 0.35);
-          min-height: 118px;
-        }
-
-        .moonMeta {
-          position: absolute;
-          top: 12px;
-          left: 12px;
-          z-index: 2;
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-          max-width: 75%;
-        }
-
-        .phaseLabel {
-          margin: 0;
-          font-size: 13px;
-          font-weight: 800;
-          color: rgba(255, 255, 255, 0.92);
-          text-shadow: 0 2px 14px rgba(0, 0, 0, 0.75);
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        /* Big moon with no inner background */
-        .moonStage {
+        /* Moon art stays behind everything else on the page */
+        .moonLayer {
           position: absolute;
           inset: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 14px 10px 10px;
-        }
-
-        .moonImg {
-          width: min(240px, 92%);
-          height: auto;
-          object-fit: contain;
-          filter: drop-shadow(0 16px 26px rgba(0, 0, 0, 0.65));
-          transform: translateZ(0);
-          user-select: none;
           pointer-events: none;
+          overflow: visible;
+          z-index: 0;
         }
 
-        /* RIGHT: stacked */
-        .rightStack {
-          display: grid;
-          grid-template-rows: 1fr 1fr;
-          gap: 12px;
-        }
-
-        .miniCard {
-          border-radius: 20px;
-          border: 1px solid rgba(255, 255, 255, 0.10);
-          background: rgba(2, 6, 23, 0.10);
-          backdrop-filter: blur(10px);
-          box-shadow: 0 0 22px rgba(0, 0, 0, 0.35);
-          padding: 12px;
-          overflow: hidden;
-          min-height: 53px;
-        }
-
-        .miniTop {
-          display: flex;
-          justify-content: flex-start;
-          margin-bottom: 10px;
-        }
-
-        .miniCenter {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .miniValue {
-          margin: 0;
-          font-size: 12px;
-          font-weight: 800;
-          color: rgba(255, 255, 255, 0.92);
-          text-shadow: 0 2px 14px rgba(0, 0, 0, 0.75);
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        /* Tone swatch */
-        .toneSwatch {
-          position: relative;
-          width: 44px;
-          height: 30px;
-          border-radius: 16px;
-          background: linear-gradient(
-              135deg,
-              rgba(255, 255, 255, 0.18) 0%,
-              rgba(255, 255, 255, 0.06) 22%,
-              rgba(0, 0, 0, 0) 55%
-            ),
-            radial-gradient(
-              circle at 30% 35%,
-              rgba(255, 255, 255, 0.14) 0%,
-              rgba(255, 255, 255, 0) 52%
-            ),
-            var(--toneHex);
-          box-shadow: 0 10px 18px rgba(0, 0, 0, 0.55),
-            inset 0 0 0 1px rgba(255, 255, 255, 0.16);
-          transform: translateZ(0);
-          flex: 0 0 auto;
-        }
-
-        .toneSheen {
+        /* Shared geometry: keep halo perfectly circular on ALL screen sizes */
+        .haloCore,
+        .rim,
+        .rimPulse,
+        .shimmer,
+        .moonBlur {
           position: absolute;
-          inset: 0;
-          border-radius: 16px;
+          right: -8px;
+          top: 50%;
+          transform: translateY(-50%) scale(0.82);
+
+          /* ✅ FIX #1: circle stays a circle (no fixed height fighting max-width) */
+          width: min(420px, 92%);
+          aspect-ratio: 1 / 1;
+          height: auto;
+
+          border-radius: 999px;
+        }
+
+        .moon {
+          position: absolute;
+          right: -8px;
+          top: 50%;
+          transform: translateY(-50%) scale(0.82);
+
+          width: min(420px, 92%);
+          height: auto;
+
+          object-fit: contain;
+          opacity: 0.995;
+          filter: drop-shadow(0 24px 40px rgba(0, 0, 0, 0.78));
+          z-index: 2; /* below HUD, still within this panel */
+        }
+
+        /* ✅ FIX #1: halo as a uniform ring, symmetrical thickness */
+        .haloCore {
           background: radial-gradient(
-            circle at 25% 30%,
-            rgba(255, 255, 255, 0.30) 0%,
-            rgba(255, 255, 255, 0) 55%
+            circle at 50% 50%,
+            rgba(56, 189, 248, 0) 0%,
+            rgba(56, 189, 248, 0) 58%,
+            rgba(56, 189, 248, 0.26) 63%,
+            rgba(56, 189, 248, 0.08) 69%,
+            rgba(56, 189, 248, 0) 74%
           );
           mix-blend-mode: screen;
-          pointer-events: none;
+          opacity: 0.95;
+          filter: blur(1.6px);
+          z-index: 1;
         }
 
-        .toneEdge {
+        .rim {
+          background: radial-gradient(
+            circle at 50% 50%,
+            rgba(255, 255, 255, 0) 60%,
+            rgba(255, 255, 255, 0.10) 68%,
+            rgba(56, 189, 248, 0.16) 74%,
+            rgba(56, 189, 248, 0) 80%
+          );
+          mix-blend-mode: screen;
+          opacity: 0.45;
+          z-index: 3;
+        }
+
+        .rimPulse {
+          background: radial-gradient(
+            circle at 50% 50%,
+            rgba(56, 189, 248, 0) 60%,
+            rgba(56, 189, 248, 0.16) 73%,
+            rgba(250, 204, 21, 0.09) 79%,
+            rgba(250, 204, 21, 0) 84%
+          );
+          mix-blend-mode: screen;
+          opacity: 0.09;
+          animation: haloPulse 7s ease-in-out infinite;
+          z-index: 3;
+        }
+
+        @keyframes haloPulse {
+          0% {
+            opacity: 0.08;
+          }
+          50% {
+            opacity: 0.14;
+          }
+          100% {
+            opacity: 0.08;
+          }
+        }
+
+        .shimmer {
+          background: linear-gradient(
+            120deg,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.07) 48%,
+            rgba(255, 255, 255, 0) 76%
+          );
+          mix-blend-mode: screen;
+          opacity: 0.08;
+          animation: shimmer 9s ease-in-out infinite;
+          z-index: 4;
+        }
+
+        @keyframes shimmer {
+          0% {
+            transform: translateY(-50%) translateX(-22px) scale(0.82);
+            opacity: 0.06;
+          }
+          45% {
+            opacity: 0.1;
+          }
+          100% {
+            transform: translateY(-50%) translateX(22px) scale(0.82);
+            opacity: 0.06;
+          }
+        }
+
+        /* ✅ FIX #2: blurred bleed is behind the next card (never on top) */
+        .moonBlur {
+          filter: blur(12px);
+          opacity: 0.22;
+          z-index: -1; /* pushes the bleed behind panel stacking */
+          transform: translateY(-50%) scale(0.82) translateY(18px);
+          mask-image: linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, 0) 0%,
+            rgba(0, 0, 0, 0) 52%,
+            rgba(0, 0, 0, 0.35) 70%,
+            rgba(0, 0, 0, 1) 100%
+          );
+        }
+
+        /* HUD always above moon art */
+        .hud {
+          position: absolute;
+          left: 16px;
+          top: 46px;
+          z-index: 5;
+        }
+
+        .kicker {
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+          color: rgba(226, 232, 240, 0.74);
+        }
+
+        .value {
+          font-size: 30px;
+          font-weight: 900;
+          color: rgba(255, 255, 255, 0.96);
+        }
+
+        .hairline {
+          width: 120px;
+          height: 1px;
+          background: linear-gradient(
+            to right,
+            rgba(56, 189, 248, 0),
+            rgba(56, 189, 248, 0.52),
+            rgba(250, 204, 21, 0.3),
+            rgba(250, 204, 21, 0)
+          );
+        }
+
+        .hairScan {
+          position: absolute;
+          top: -2px;
+          left: -30%;
+          width: 30%;
+          height: 5px;
+          background: linear-gradient(
+            to right,
+            rgba(255, 255, 255, 0),
+            rgba(255, 255, 255, 0.22),
+            rgba(255, 255, 255, 0)
+          );
+          opacity: 0.36;
+          filter: blur(0.3px);
+          animation: scan 5s ease-in-out infinite;
+        }
+
+        @keyframes scan {
+          0% {
+            transform: translateX(0);
+            opacity: 0.2;
+          }
+          50% {
+            opacity: 0.4;
+          }
+          100% {
+            transform: translateX(520%);
+            opacity: 0.2;
+          }
+        }
+
+        .grain {
           position: absolute;
           inset: 0;
-          border-radius: 16px;
-          border: 1px solid rgba(255, 255, 255, 0.16);
           pointer-events: none;
+          opacity: 0.04;
         }
 
-        /* Signal */
-        .signalRow {
-          justify-content: space-between;
-          width: 100%;
-        }
-
-        .signalNumber {
-          font-size: 34px;
-          font-weight: 900;
-          line-height: 1;
-          color: rgba(255, 255, 255, 0.95);
-          text-shadow: 0 10px 26px rgba(0, 0, 0, 0.75);
-          letter-spacing: -0.02em;
-        }
-
-        .signalTicks {
-          display: inline-flex;
-          gap: 6px;
-          align-items: center;
-          opacity: 0.7;
-        }
-
-        .signalTicks span {
-          width: 6px;
-          height: 20px;
-          border-radius: 999px;
-          background: linear-gradient(
-            to bottom,
-            rgba(255, 255, 255, 0.40),
-            rgba(255, 255, 255, 0.08)
-          );
-          box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.10);
-        }
-
-        /* Responsive */
         @media (max-width: 560px) {
-          .dipLayout {
-            grid-template-columns: 1.35fr 1fr;
+          .hero {
+            height: 228px;
           }
-          .moonImg {
-            width: min(220px, 90%);
+
+          .hud {
+            top: 48px;
+          }
+
+          .value {
+            font-size: 26px;
           }
         }
 
         @media (max-width: 420px) {
-          .dipLayout {
-            grid-template-columns: 1fr;
+          .hero {
+            height: 218px;
           }
-          .rightStack {
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: none;
+
+          .value {
+            font-size: 24px;
           }
         }
       `}</style>
