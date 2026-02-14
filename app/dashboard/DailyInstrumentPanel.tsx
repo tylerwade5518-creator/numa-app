@@ -7,7 +7,7 @@ type Props = {
   moonPhaseLabel?: string | null;
   showLive?: boolean;
 
-  // ✅ Accept extra props that DashboardClient/DashboardClient.tsx passes
+  // Accept extra props that DashboardClient/DashboardClient.tsx passes
   toneName?: string;
   toneHex?: string;
   signalNumber?: number;
@@ -96,7 +96,7 @@ export default function DailyInstrumentPanel({ moonPhaseLabel }: Props) {
 
         .hero {
           position: relative;
-          height: 236px;
+          height: 176px;
           overflow: visible;
           background: transparent;
           z-index: 0;
@@ -116,9 +116,9 @@ export default function DailyInstrumentPanel({ moonPhaseLabel }: Props) {
         .shimmer,
         .moonBlur {
           position: absolute;
-          right: -8px;
-          top: 50%;
-          transform: translateY(-50%) scale(0.82);
+          right: -32px;
+          top: 52%;
+          transform: translateY(-50%) scale(0.68);
           width: min(420px, 92%);
           aspect-ratio: 1 / 1;
           height: auto;
@@ -127,15 +127,15 @@ export default function DailyInstrumentPanel({ moonPhaseLabel }: Props) {
 
         .moon {
           position: absolute;
-          right: -8px;
-          top: 50%;
-          transform: translateY(-50%) scale(0.82);
+          right: -32px;
+          top: 52%;
+          transform: translateY(-50%) scale(0.68);
           width: min(420px, 92%);
           height: auto;
           object-fit: contain;
-          opacity: 0.995;
-          filter: drop-shadow(0 24px 40px rgba(0, 0, 0, 0.78));
-          z-index: 2;
+          opacity: 0.985;
+          filter: drop-shadow(0 20px 34px rgba(0, 0, 0, 0.7));
+          z-index: 0;
         }
 
         .haloCore {
@@ -143,14 +143,14 @@ export default function DailyInstrumentPanel({ moonPhaseLabel }: Props) {
             circle at 50% 50%,
             rgba(56, 189, 248, 0) 0%,
             rgba(56, 189, 248, 0) 58%,
-            rgba(56, 189, 248, 0.26) 63%,
-            rgba(56, 189, 248, 0.08) 69%,
+            rgba(56, 189, 248, 0.24) 63%,
+            rgba(56, 189, 248, 0.07) 69%,
             rgba(56, 189, 248, 0) 74%
           );
           mix-blend-mode: screen;
-          opacity: 0.95;
+          opacity: 0.85;
           filter: blur(1.6px);
-          z-index: 1;
+          z-index: -1;
         }
 
         .rim {
@@ -162,33 +162,33 @@ export default function DailyInstrumentPanel({ moonPhaseLabel }: Props) {
             rgba(56, 189, 248, 0) 80%
           );
           mix-blend-mode: screen;
-          opacity: 0.45;
-          z-index: 3;
+          opacity: 0.36;
+          z-index: 1;
         }
 
         .rimPulse {
           background: radial-gradient(
             circle at 50% 50%,
             rgba(56, 189, 248, 0) 60%,
-            rgba(56, 189, 248, 0.16) 73%,
-            rgba(250, 204, 21, 0.09) 79%,
+            rgba(56, 189, 248, 0.14) 73%,
+            rgba(250, 204, 21, 0.08) 79%,
             rgba(250, 204, 21, 0) 84%
           );
           mix-blend-mode: screen;
-          opacity: 0.09;
+          opacity: 0.07;
           animation: haloPulse 7s ease-in-out infinite;
-          z-index: 3;
+          z-index: 1;
         }
 
         @keyframes haloPulse {
           0% {
-            opacity: 0.08;
+            opacity: 0.06;
           }
           50% {
-            opacity: 0.14;
+            opacity: 0.11;
           }
           100% {
-            opacity: 0.08;
+            opacity: 0.06;
           }
         }
 
@@ -200,43 +200,74 @@ export default function DailyInstrumentPanel({ moonPhaseLabel }: Props) {
             rgba(255, 255, 255, 0) 76%
           );
           mix-blend-mode: screen;
-          opacity: 0.08;
+          opacity: 0.06;
           animation: shimmer 9s ease-in-out infinite;
-          z-index: 4;
+          z-index: 2;
         }
 
         @keyframes shimmer {
           0% {
-            transform: translateY(-50%) translateX(-22px) scale(0.82);
-            opacity: 0.06;
+            transform: translateY(-50%) translateX(-22px) scale(0.68);
+            opacity: 0.045;
           }
           45% {
-            opacity: 0.1;
+            opacity: 0.075;
           }
           100% {
-            transform: translateY(-50%) translateX(22px) scale(0.82);
-            opacity: 0.06;
+            transform: translateY(-50%) translateX(22px) scale(0.68);
+            opacity: 0.045;
           }
         }
 
+        /*
+          ✅ FIX: remove the visible “mask seam / blur line”
+          - make the fade-in MUCH more gradual (no tight transition band)
+          - slightly lower opacity + slightly more blur
+          - push the clone down a touch so the fade happens deeper behind the card
+          - include -webkit-mask-image for Safari consistency
+        */
         .moonBlur {
-          filter: blur(12px);
-          opacity: 0.22;
-          z-index: -1;
-          transform: translateY(-50%) scale(0.82) translateY(18px);
+          filter: blur(16px);
+          opacity: 0.14;
+          z-index: -2;
+          transform: translateY(-50%) scale(0.68) translateY(70px);
+          will-change: transform;
+
+          -webkit-mask-image: linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, 0) 0%,
+            rgba(0, 0, 0, 0) 28%,
+            rgba(0, 0, 0, 0.05) 44%,
+            rgba(0, 0, 0, 0.14) 56%,
+            rgba(0, 0, 0, 0.28) 66%,
+            rgba(0, 0, 0, 0.55) 78%,
+            rgba(0, 0, 0, 0.85) 90%,
+            rgba(0, 0, 0, 1) 100%
+          );
           mask-image: linear-gradient(
             to bottom,
             rgba(0, 0, 0, 0) 0%,
-            rgba(0, 0, 0, 0) 52%,
-            rgba(0, 0, 0, 0.35) 70%,
+            rgba(0, 0, 0, 0) 28%,
+            rgba(0, 0, 0, 0.05) 44%,
+            rgba(0, 0, 0, 0.14) 56%,
+            rgba(0, 0, 0, 0.28) 66%,
+            rgba(0, 0, 0, 0.55) 78%,
+            rgba(0, 0, 0, 0.85) 90%,
             rgba(0, 0, 0, 1) 100%
           );
+
+          -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+          -webkit-mask-size: 100% 100%;
+          mask-size: 100% 100%;
+          -webkit-mask-position: center;
+          mask-position: center;
         }
 
         .hud {
           position: absolute;
           left: 16px;
-          top: 46px;
+          top: 20px;
           z-index: 5;
         }
 
@@ -304,6 +335,24 @@ export default function DailyInstrumentPanel({ moonPhaseLabel }: Props) {
           inset: 0;
           pointer-events: none;
           opacity: 0.04;
+        }
+
+        @media (max-width: 560px) {
+          .hero {
+            height: 170px;
+          }
+          .value {
+            font-size: 26px;
+          }
+        }
+
+        @media (max-width: 420px) {
+          .hero {
+            height: 164px;
+          }
+          .value {
+            font-size: 24px;
+          }
         }
       `}</style>
     </section>
