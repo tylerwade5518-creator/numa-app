@@ -57,7 +57,7 @@
       "metersHero": "Today is a day to build — energy is steady."
     },
     "Aquarius": {
-      "horoscope": { "title": "Steady Signals, Quiet Momentum", "summary": "Today favors quiet momentum moves over dramatic ones. Trust your instincts - a subtle shift in timing or conversation can open something meaningfull." },
+      "horoscope": { "title": "Steady Signals", "summary": "Today favors quiet momentum moves over dramatic ones. Trust your instincts - a subtle shift in timing or conversation can open something meaningfull." },
       "meters": { "energy": 60, "connection": 90, "flow": 30 },
       "metersHero": "Connection is high - reach out"
     },
