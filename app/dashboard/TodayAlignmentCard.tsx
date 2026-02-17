@@ -34,12 +34,10 @@ export default function TodayAlignmentCard({
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-3">
+          {/* Footer: single line only (shorter card => meters rise) */}
+          <div className="border-t border-white/10 pt-2">
             <p className="text-[12px] text-slate-100/80">
               Based on today’s real sky positions.
-            </p>
-            <p className="text-[12px] text-slate-300/80">
-              Tap your band any time today to reopen this reading.
             </p>
           </div>
         </div>

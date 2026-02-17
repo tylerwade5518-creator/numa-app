@@ -8,6 +8,7 @@ export function PinnedCard({ card }: { card: CardRecord }) {
     <div className="overflow-hidden rounded-3xl border border-white/10 bg-slate-950/45 backdrop-blur-md shadow-[0_0_35px_rgba(15,23,42,0.9)]">
       {/* Mobile: stack / Desktop: side-by-side */}
       <div className="flex flex-col gap-4 p-4 sm:flex-row sm:gap-5 sm:p-5">
+        
         {/* Card media */}
         <div className="w-full sm:w-auto sm:shrink-0">
           <div
@@ -40,7 +41,8 @@ export function PinnedCard({ card }: { card: CardRecord }) {
 
         {/* Text content */}
         <div className="min-w-0 flex-1 space-y-4">
-          {/* Card name (now directly under the card on mobile) */}
+
+          {/* Card name */}
           <div className="space-y-1">
             <div className="text-[11px] uppercase tracking-[0.18em] text-slate-300">
               Stardust Action Card
@@ -50,7 +52,7 @@ export function PinnedCard({ card }: { card: CardRecord }) {
             </div>
           </div>
 
-          {/* Stardust Action (moved up) */}
+          {/* Stardust Action */}
           <div className="space-y-1">
             <div className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
               Stardust Action
@@ -60,17 +62,7 @@ export function PinnedCard({ card }: { card: CardRecord }) {
             </div>
           </div>
 
-          {/* Meaning */}
-          <div className="space-y-1">
-            <div className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
-              Meaning
-            </div>
-            <div className="text-sm leading-relaxed text-slate-100/90">
-              {card.meaning}
-            </div>
-          </div>
-
-          {/* Why today */}
+          {/* Why today (Meaning removed for cleaner, higher-impact card) */}
           <div className="space-y-1">
             <div className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
               Why today
@@ -79,6 +71,7 @@ export function PinnedCard({ card }: { card: CardRecord }) {
               {card.whyToday}
             </div>
           </div>
+
         </div>
       </div>
     </div>
