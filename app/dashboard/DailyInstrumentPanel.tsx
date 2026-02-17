@@ -1,7 +1,7 @@
 // app/dashboard/DailyInstrumentPanel.tsx
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 type Props = {
   moonPhaseLabel?: string | null;
@@ -11,6 +11,9 @@ type Props = {
   toneName?: string;
   toneHex?: string;
   signalNumber?: number;
+
+  // ✅ optional moon sign label (e.g., "Leo" or "Moon in Leo")
+  moonSignLabel?: string | null;
 };
 
 type PhaseKey =
@@ -22,6 +25,13 @@ type PhaseKey =
   | "waning_gibbous"
   | "last_quarter"
   | "waning_crescent";
+
+type DailyJson = {
+  sky?: {
+    moonPhaseLabel?: string | null;
+    moonSignLabel?: string | null;
+  };
+};
 
 function normalizePhase(label?: string | null): PhaseKey {
   const v = (label ?? "").trim().toLowerCase();
@@ -35,6 +45,10 @@ function normalizePhase(label?: string | null): PhaseKey {
   if (v.includes("waning") && v.includes("gibbous")) return "waning_gibbous";
   if (v.includes("last") && v.includes("quarter")) return "last_quarter";
   if (v.includes("waning") && v.includes("crescent")) return "waning_crescent";
+
+  // ✅ Allow feeding in our renamed display labels too
+  if (v.includes("waxing") && v.includes("quarter")) return "first_quarter";
+  if (v.includes("waning") && v.includes("quarter")) return "last_quarter";
 
   return "first_quarter";
 }
@@ -50,15 +64,91 @@ const MOON_SRC: Record<PhaseKey, string> = {
   waning_crescent: "/moons/moon-waning-crescent.png",
 };
 
-export default function DailyInstrumentPanel({ moonPhaseLabel }: Props) {
-  const safeLabel = (moonPhaseLabel ?? "").trim() || "First Quarter";
+function formatMoonSignLine(moonSignLabel?: string | null) {
+  const raw = (moonSignLabel ?? "").trim();
+  if (!raw) return "";
+  return /^moon\s+in\s+/i.test(raw) ? raw : `Moon in ${raw}`;
+}
+
+// ✅ Only rename quarters when the label is *actually* a quarter label.
+// Otherwise, show the label as-is (so testing works and future labels are respected).
+function displayPhaseLabelPreserveRaw(phaseKey: PhaseKey, rawLabel: string) {
+  const raw = (rawLabel ?? "").trim();
+  const lower = raw.toLowerCase();
+
+  const isQuarterLike =
+    (lower.includes("first") && lower.includes("quarter")) ||
+    (lower.includes("last") && lower.includes("quarter")) ||
+    (lower.includes("waxing") && lower.includes("quarter")) ||
+    (lower.includes("waning") && lower.includes("quarter"));
+
+  if (isQuarterLike) {
+    if (phaseKey === "first_quarter") return "Waxing Quarter";
+    if (phaseKey === "last_quarter") return "Waning Quarter";
+  }
+
+  return raw;
+}
+
+export default function DailyInstrumentPanel({
+  moonPhaseLabel,
+  moonSignLabel,
+}: Props) {
+  const [dailyPhase, setDailyPhase] = useState<string | null>(null);
+  const [dailyMoonSign, setDailyMoonSign] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadDaily() {
+      try {
+        const res = await fetch(`/daily.json?ts=${Date.now()}`, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        if (!res.ok) return;
+
+        const data = (await res.json()) as DailyJson;
+        const phase = (data?.sky?.moonPhaseLabel ?? "").toString().trim();
+        const sign = (data?.sky?.moonSignLabel ?? "").toString().trim();
+
+        setDailyPhase(phase || null);
+        setDailyMoonSign(sign || null);
+      } catch {
+        // Silent fail
+      }
+    }
+
+    loadDaily();
+    return () => controller.abort();
+  }, []);
+
+  // ✅ Effective labels: daily.json > parent props > defaults
+  const effectivePhaseLabel =
+    (dailyPhase ?? "").trim() ||
+    (moonPhaseLabel ?? "").trim() ||
+    "First Quarter";
 
   const phaseKey = useMemo(
-    () => normalizePhase(moonPhaseLabel),
-    [moonPhaseLabel]
+    () => normalizePhase(effectivePhaseLabel),
+    [effectivePhaseLabel]
   );
 
   const moonSrc = useMemo(() => MOON_SRC[phaseKey], [phaseKey]);
+
+  // ✅ Show raw label unless it’s a quarter (then rename to Waxing/Waning Quarter)
+  const safeLabel = useMemo(
+    () => displayPhaseLabelPreserveRaw(phaseKey, effectivePhaseLabel),
+    [phaseKey, effectivePhaseLabel]
+  );
+
+  const effectiveMoonSign =
+    (dailyMoonSign ?? "").trim() || (moonSignLabel ?? "").trim() || "";
+
+  const moonSignLine = useMemo(
+    () => formatMoonSignLine(effectiveMoonSign),
+    [effectiveMoonSign]
+  );
 
   return (
     <section className="wrap" aria-label={`Moon phase: ${safeLabel}`}>
@@ -69,12 +159,17 @@ export default function DailyInstrumentPanel({ moonPhaseLabel }: Props) {
           <div className="rim" />
           <div className="rimPulse" />
           <div className="shimmer" />
-          <img src={moonSrc} alt="" className="moonBlur" draggable={false} />
+
+          {/* ✅ REMOVED: moonBlur clone */}
+          {/* <img src={moonSrc} alt="" className="moonBlur" draggable={false} /> */}
         </div>
 
         <div className="hud">
           <p className="kicker">LUNAR PHASE</p>
           <p className="value">{safeLabel}</p>
+
+          {moonSignLine ? <p className="subvalue">{moonSignLine}</p> : null}
+
           <div className="hairline">
             <span className="hairScan" />
           </div>
@@ -219,13 +314,6 @@ export default function DailyInstrumentPanel({ moonPhaseLabel }: Props) {
           }
         }
 
-        /*
-          ✅ FIX: remove the visible “mask seam / blur line”
-          - make the fade-in MUCH more gradual (no tight transition band)
-          - slightly lower opacity + slightly more blur
-          - push the clone down a touch so the fade happens deeper behind the card
-          - include -webkit-mask-image for Safari consistency
-        */
         .moonBlur {
           filter: blur(16px);
           opacity: 0.14;
@@ -280,9 +368,18 @@ export default function DailyInstrumentPanel({ moonPhaseLabel }: Props) {
         }
 
         .value {
-          font-size: 30px;
+          font-size: 22px;
           font-weight: 900;
           color: rgba(255, 255, 255, 0.96);
+        }
+
+        .subvalue {
+          margin-top: 2px;
+          font-size: 12px;
+          font-weight: 650;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          color: rgba(226, 232, 240, 0.62);
         }
 
         .hairline {

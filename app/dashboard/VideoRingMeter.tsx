@@ -8,23 +8,23 @@ type Labels = { low: string; mid: string; high: string };
 type Variant = "energy" | "luck" | "social";
 
 type Props = {
-  // ✅ Preferred (current)
+  // Preferred (current)
   progress?: number; // 0..1
-  directive?: string;
+  directive?: string; // kept for back-compat; not rendered inside
 
-  // ✅ Back-compat (older calls)
+  // Back-compat (older calls)
   value?: number; // 0..1
-  label?: string;
+  label?: string; // kept for back-compat; not rendered inside
 
   labels?: Labels;
   tickCount?: number;
 
-  // ✅ Visual controls
-  videoSrc?: string; // default locked to solar flare
-  videoHueRotateDeg?: number; // overrides variant if provided
+  // Visual controls
+  videoSrc?: string;
+  videoHueRotateDeg?: number;
   variant?: Variant;
 
-  // ✅ Layout hooks (parent can overlap meters without changing visuals)
+  // Layout hooks
   size?: number; // default 132
   className?: string;
 };
@@ -36,14 +36,13 @@ function clamp01(n: unknown) {
 }
 
 function variantHue(variant?: Variant): number {
-  // One texture, 3 colorways. Tuned for: Energy (cool), Luck (gold), Social (purple/pink).
   switch (variant) {
     case "energy":
-      return 210; // cool / electric
+      return 210;
     case "luck":
-      return 0; // solar / gold
+      return 0;
     case "social":
-      return 315; // purple/pink
+      return 315;
     default:
       return 0;
   }
@@ -63,12 +62,14 @@ export default function VideoRingMeter({
 }: Props) {
   const p = clamp01(progress ?? value);
 
+  // keep back-compat params “used”
+  void directive;
+  void label;
+
   const pct = useMemo(() => {
     const v = Math.round(p * 100);
     return Math.max(1, Math.min(100, v));
   }, [p]);
-
-  const shownDirective = (directive ?? label ?? "").trim();
 
   const ringVideoRef = useRef<HTMLVideoElement | null>(null);
   const centerVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -93,7 +94,6 @@ export default function VideoRingMeter({
   const CX = SIZE / 2;
   const CY = SIZE / 2;
 
-  // Preserve the original ratios
   const ringMidR = (60 / 132) * SIZE;
   const ringThickness = (30 / 132) * SIZE;
 
@@ -103,7 +103,9 @@ export default function VideoRingMeter({
   const angleDeg = useMemo(() => Math.max(0.001, p * 360), [p]);
 
   const hue =
-    typeof videoHueRotateDeg === "number" ? videoHueRotateDeg : variantHue(variant);
+    typeof videoHueRotateDeg === "number"
+      ? videoHueRotateDeg
+      : variantHue(variant);
 
   const ringVideoStyle: React.CSSProperties = {
     filter: `hue-rotate(${hue}deg) saturate(1.32) brightness(1.12) contrast(1.08)`,
@@ -158,7 +160,7 @@ export default function VideoRingMeter({
       rgba(255,255,255,0) ${angleDeg}deg 360deg
     )`;
 
-    // Cap centers
+    // cap centers
     const sx = CX;
     const sy = CY - ringMidR;
 
@@ -182,7 +184,7 @@ export default function VideoRingMeter({
       )`,
     ].join(",");
 
-    return { donutMask, progressMask, capMask };
+    return { donutMask, progressMask, capMask, end: { ex, ey } };
   }, [CX, CY, ringMidR, ringThickness, angleDeg, SIZE]);
 
   const showCaps = p > 0.01;
@@ -211,6 +213,89 @@ export default function VideoRingMeter({
 
     return style as React.CSSProperties;
   }, [masks.donutMask, masks.progressMask, masks.capMask, showCaps]);
+
+  // Static track behind everything (subtle dark baseline)
+  const trackStyle: React.CSSProperties = useMemo(() => {
+    const thickness = ringThickness * 0.92;
+    return {
+      width: ringMidR * 2,
+      height: ringMidR * 2,
+      left: CX - ringMidR,
+      top: CY - ringMidR,
+      borderRadius: 9999,
+      boxSizing: "border-box",
+      border: `${thickness}px solid rgba(0,0,0,0.38)`,
+      boxShadow: `inset 0 0 ${Math.max(10, SIZE * 0.09)}px rgba(255,255,255,0.06)`,
+      pointerEvents: "none",
+      position: "absolute",
+    };
+  }, [CX, CY, ringMidR, ringThickness, SIZE]);
+
+  // Dims ONLY the unfilled portion
+  const unfilledShadeStyle: React.CSSProperties = useMemo(() => {
+    const inv = `conic-gradient(from -90deg,
+      rgba(0,0,0,0) 0deg ${angleDeg}deg,
+      rgba(0,0,0,0.52) ${angleDeg}deg 360deg
+    )`;
+
+    const outer = ringMidR + ringThickness / 2;
+    const inner = ringMidR - ringThickness / 2;
+    const feather = (2.75 / 132) * SIZE;
+
+    const donut = `radial-gradient(circle at ${CX}px ${CY}px,
+      rgba(255,255,255,0) 0px,
+      rgba(255,255,255,0) ${Math.max(0, inner - feather)}px,
+      rgba(255,255,255,1) ${inner}px,
+      rgba(255,255,255,1) ${outer}px,
+      rgba(255,255,255,0) ${outer + feather}px
+    )`;
+
+    const images = `${donut}, ${inv}`;
+
+    const style: any = {
+      WebkitMaskImage: images,
+      maskImage: images,
+      WebkitMaskRepeat: "no-repeat",
+      maskRepeat: "no-repeat",
+      WebkitMaskSize: "100% 100%, 100% 100%",
+      maskSize: "100% 100%, 100% 100%",
+      WebkitMaskPosition: "center, center",
+      maskPosition: "center, center",
+      WebkitMaskComposite: "source-in",
+      background: "rgba(0,0,0,0.62)",
+      opacity: 0.62,
+      pointerEvents: "none",
+      position: "absolute",
+      inset: 0,
+      borderRadius: 9999,
+      transform: "translateZ(0)",
+      WebkitTransform: "translateZ(0)",
+    };
+
+    return style as React.CSSProperties;
+  }, [CX, CY, ringMidR, ringThickness, angleDeg, SIZE]);
+
+  // Subtle endpoint glow
+  const endGlowStyle: React.CSSProperties = useMemo(() => {
+    const { ex, ey } = masks.end;
+    const r = ringThickness * 0.42;
+
+    return {
+      position: "absolute",
+      left: ex,
+      top: ey,
+      width: r * 2,
+      height: r * 2,
+      transform: "translate(-50%, -50%)",
+      borderRadius: 9999,
+      pointerEvents: "none",
+      background:
+        "radial-gradient(circle at center, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.10) 38%, rgba(255,255,255,0) 72%)",
+      filter: `blur(${Math.max(1.5, SIZE * 0.012)}px)`,
+      mixBlendMode: "screen",
+      opacity: showCaps ? 0.55 : 0,
+    };
+  }, [masks.end, ringThickness, SIZE, showCaps]);
 
   return (
     <div className={"relative flex items-center justify-center " + (className ?? "")}>
@@ -241,6 +326,9 @@ export default function VideoRingMeter({
           style={{ inset: innerDiskInset }}
         />
 
+        {/* Track baseline */}
+        <div style={trackStyle} />
+
         {/* Tick ring */}
         <svg
           className="absolute inset-0"
@@ -269,6 +357,7 @@ export default function VideoRingMeter({
               );
             })}
           </g>
+
           <circle
             cx={CX}
             cy={CY}
@@ -296,29 +385,29 @@ export default function VideoRingMeter({
               <div className="absolute inset-0 ringFeather" />
             </div>
           </div>
+
+          {/* dim only the unfilled segment */}
+          <div style={unfilledShadeStyle} />
+
+          {/* endpoint glow */}
+          <div style={endGlowStyle} />
         </div>
 
-        {/* Center text */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center px-3 text-center">
+        {/* Center text (percentage only) */}
+        <div className="absolute inset-0 flex items-center justify-center px-3 text-center">
           <div className="meterPct">{pct}%</div>
-          {shownDirective ? <div className="meterDirective">{shownDirective}</div> : null}
         </div>
       </div>
 
       <style jsx>{`
+        /* Bigger, lighter, less “bulky” */
         .meterPct {
-          font-size: 14px;
-          font-weight: 700;
-          letter-spacing: 0.06em;
+          font-size: 16px;
+          font-weight: 650;
+          letter-spacing: 0.02em;
           color: rgba(255, 255, 255, 0.92);
-          text-transform: uppercase;
           line-height: 1;
-        }
-        .meterDirective {
-          margin-top: 6px;
-          font-size: 11px;
-          color: rgba(226, 232, 240, 0.78);
-          line-height: 1.2;
+          text-shadow: 0 1px 14px rgba(0, 0, 0, 0.5);
         }
 
         .ringFeather {

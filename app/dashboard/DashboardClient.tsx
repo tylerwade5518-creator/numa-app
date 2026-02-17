@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import AnimatedSpaceBackground from "./AnimatedSpaceBackground";
 
-/** NEW: Moon phase / daily instrument panel (top widget) */
+/** Moon phase / daily instrument panel (top widget) */
 import DailyInstrumentPanel from "./DailyInstrumentPanel";
 
 /** Stardust Action Card registry + pinned renderer */
@@ -366,7 +366,42 @@ function getLocalDayKey(): string {
 }
 
 /* -------------------------------
-   Dashboard Inner (uses useSearchParams)
+   Daily JSON types + helpers
+   ------------------------------- */
+
+type DailyJson = {
+  schemaVersion?: number;
+  date?: string;
+  sky?: {
+    moonPhaseLabel?: string | null;
+    moonSignLabel?: string | null;
+  };
+  signs?: Record<
+    string,
+    {
+      horoscope?: { title?: string | null; summary?: string | null };
+      meters?: { energy?: number; connection?: number; flow?: number };
+      metersHero?: string | null;
+    }
+  >;
+};
+
+function clamp01(n: unknown) {
+  const v = typeof n === "number" ? n : Number(n);
+  if (!Number.isFinite(v)) return 0;
+  return Math.max(0, Math.min(1, v));
+}
+
+function asPct01(n: unknown) {
+  // supports either 0..1 or 0..100 in JSON
+  const v = typeof n === "number" ? n : Number(n);
+  if (!Number.isFinite(v)) return 0;
+  if (v > 1.01) return clamp01(v / 100);
+  return clamp01(v);
+}
+
+/* -------------------------------
+   Dashboard Inner
    ------------------------------- */
 
 type SyncStatus = "idle" | "syncing";
@@ -388,20 +423,61 @@ function DashboardInner() {
     if (resolved) localStorage.setItem(LAST_BAND_STORAGE_KEY, resolved);
   }, [bandIdFromUrl]);
 
+  // ✅ Your current identity values (leave as-is; can be wired later)
   const bandName = "NUMA BAND";
   const displayName = "Tyler";
   const sign = "Aquarius";
   const birthday = "Feb 5";
 
   const todayLabel = "Today’s Alignment";
-  const horoscopeTitle = "Quiet Confidence in Motion";
+
+  // ✅ Daily JSON state
+  const [daily, setDaily] = useState<DailyJson | null>(null);
+
+  // ✅ Fetch daily.json (cache-busted so edits show immediately)
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await fetch(`/daily.json?ts=${Date.now()}`, {
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as DailyJson;
+        if (!cancelled) setDaily(data);
+      } catch {
+        // ignore (fallbacks below will render)
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const signBlock = useMemo(() => {
+    const key = sign; // matches Title Case keys: "Aquarius", "Leo", etc.
+    return daily?.signs?.[key] ?? null;
+  }, [daily, sign]);
+
+  // ✅ Horoscope from JSON (fallback to your previous hardcoded values)
+  const horoscopeTitle =
+    (signBlock?.horoscope?.title ?? "").trim() ||
+    "Quiet Confidence in Motion";
+
   const horoscopeSummary =
+    (signBlock?.horoscope?.summary ?? "").trim() ||
     "Today favors calm, deliberate moves instead of big dramatic swings. Keep your plans simple, follow through once, and let your quiet consistency stand out on its own.";
 
-  // Example meter values (swap later with real values)
-  const energyLevel = 0.86;
-  const focusLevel = 0.62;
-  const connectionLevel = 0.48;
+  // ✅ Meters from JSON (0..100 or 0..1 supported), fallbacks stay sane
+  const energyLevel = asPct01(signBlock?.meters?.energy ?? 0.86);
+  const connectionLevel = asPct01(signBlock?.meters?.connection ?? 0.48);
+  const flowLevel = asPct01(signBlock?.meters?.flow ?? 0.62);
+
+  // ✅ Meters hero title (replaces "Daily Meters")
+  const metersHero =
+    (signBlock?.metersHero ?? "").trim() || "Daily Meters";
 
   const todayKey = useMemo(() => getLocalDayKey(), []);
 
@@ -423,7 +499,7 @@ function DashboardInner() {
       const raw = localStorage.getItem(STARDUST_STORAGE_KEY);
       if (!raw) return;
 
-      const parsed = JSON.parse(raw) as StardustPersist;
+      const parsed = JSON.parse(raw) as any;
       if (!parsed?.date) return;
 
       if (parsed.date !== todayKey) {
@@ -440,8 +516,8 @@ function DashboardInner() {
     }
   }, [todayKey]);
 
-  const persistStardust = (next: Omit<StardustPersist, "date">) => {
-    const payload: StardustPersist = { date: todayKey, ...next };
+  const persistStardust = (next: Omit<any, "date">) => {
+    const payload: any = { date: todayKey, ...next };
     localStorage.setItem(STARDUST_STORAGE_KEY, JSON.stringify(payload));
   };
 
@@ -485,17 +561,6 @@ function DashboardInner() {
       clearTimeout(tDone);
     };
   };
-
-  const analysisLabel =
-    analysisStep === "horoscope"
-      ? "Analyzing horoscope…"
-      : analysisStep === "meters"
-      ? "Analyzing daily meters…"
-      : analysisStep === "sky"
-      ? "Analyzing current sky…"
-      : analysisStep === "reveal"
-      ? "Selecting your card…"
-      : "";
 
   /* -------------------------------
      Tap Share state + Supabase sync
@@ -712,12 +777,13 @@ function DashboardInner() {
             </button>
           </section>
 
-          {/* NEW: MOON PHASE / INSTRUMENT PANEL (TOP CONTAINER) */}
+          {/* MOON PHASE / INSTRUMENT PANEL (TOP CONTAINER) */}
           <section>
+            {/* Keep this as-is — you said moon phase + sign are already wired */}
             <DailyInstrumentPanel />
           </section>
 
-          {/* MAIN HOROSCOPE CARD */}
+          {/* MAIN HOROSCOPE CARD (NOW WIRED TO daily.json) */}
           <section className="-mt-8 relative z-20">
             <div className="relative rounded-3xl border border-yellow-200/45 bg-slate-950/40 p-6 sm:p-7 backdrop-blur-md shadow-[0_0_45px_rgba(15,23,42,0.9)]">
               <div className="relative space-y-5">
@@ -749,138 +815,117 @@ function DashboardInner() {
             </div>
           </section>
 
-{/* METERS */}
-<section>
-  {/* No border, no bg, no blur — meters sit directly on the dashboard background */}
-  <div className="relative">
-    <div className="mb-4">
-      <p className="metersTitle">Daily Meters</p>
-    </div>
+          {/* METERS (NOW WIRED TO daily.json) */}
+          <section>
+            <div className="relative">
+              <div className="mb-4">
+                {/* ✅ this now comes from daily.json per sign */}
+                <p className="metersTitle">{metersHero}</p>
+              </div>
 
-    <div className="grid grid-cols-3 gap-3 sm:gap-6">
-      {/* ENERGY */}
-      <div className="flex flex-col items-center text-center">
-        <div className="mb-2">
-          <div className="meterHead">ENERGY</div>
-          <div className="mt-0.5 text-[11px] text-slate-400/90">
-            Capacity to act
-          </div>
-        </div>
+              <div className="grid grid-cols-3 gap-3 sm:gap-6">
+                {/* ENERGY */}
+                <div className="flex flex-col items-center text-center">
+                  <div className="mb-2">
+                    <div className="meterHead">ENERGY</div>
+                    <div className="mt-0.5 text-[11px] text-slate-400/90">
+                      Capacity to act
+                    </div>
+                  </div>
 
-        <VideoRingMeter
-          progress={energyLevel}
-          directive="Make moves"
-          tickCount={10}
-          videoSrc="/textures/solar-flare-animated.mp4"
-          videoHueRotateDeg={0}
-        />
-      </div>
+                  <VideoRingMeter
+                    progress={energyLevel}
+                    directive="Make moves"
+                    tickCount={10}
+                    videoSrc="/textures/solar-flare-animated.mp4"
+                    videoHueRotateDeg={0}
+                  />
+                </div>
 
-      {/* CONNECTION (moved to middle) */}
-      <div className="flex flex-col items-center text-center">
-        <div className="mb-2">
-          <div className="meterHead">CONNECTION</div>
-          <div className="mt-0.5 text-[11px] text-slate-400/90">
-            Social resonance
-          </div>
-        </div>
+                {/* CONNECTION */}
+                <div className="flex flex-col items-center text-center">
+                  <div className="mb-2">
+                    <div className="meterHead">CONNECTION</div>
+                    <div className="mt-0.5 text-[11px] text-slate-400/90">
+                      Social resonance
+                    </div>
+                  </div>
 
-        <VideoRingMeter
-          progress={connectionLevel}
-          directive="Reach out"
-          tickCount={10}
-          videoSrc="/textures/solar-flare-animated.mp4"
-          videoHueRotateDeg={305}
-        />
-      </div>
+                  <VideoRingMeter
+                    progress={connectionLevel}
+                    directive="Reach out"
+                    tickCount={10}
+                    videoSrc="/textures/solar-flare-animated.mp4"
+                    videoHueRotateDeg={305}
+                  />
+                </div>
 
-      {/* LUCK (replaces focus + moved to last) */}
-      <div className="flex flex-col items-center text-center">
-        <div className="mb-2">
-          <div className="meterHead">LUCK</div>
-          <div className="mt-0.5 text-[11px] text-slate-400/90">
-            Timing advantage
-          </div>
-        </div>
+                {/* THIRD METER (data key is flow in daily.json) */}
+                <div className="flex flex-col items-center text-center">
+                  <div className="mb-2">
+                    <div className="meterHead">LUCK</div>
+                    <div className="mt-0.5 text-[11px] text-slate-400/90">
+                      Timing advantage
+                    </div>
+                  </div>
 
-        <VideoRingMeter
-          progress={focusLevel}
-          directive="Get lucky"
-          tickCount={10}
-          videoSrc="/textures/solar-flare-animated.mp4"
-          videoHueRotateDeg={210}
-        />
-      </div>
-    </div>
-  </div>
-</section>
+                  <VideoRingMeter
+                    progress={flowLevel}
+                    directive="Get lucky"
+                    tickCount={10}
+                    videoSrc="/textures/solar-flare-animated.mp4"
+                    videoHueRotateDeg={210}
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
 
+          {/* STARDUST BUTTON / CARD */}
+          <section>
+            <button
+              type="button"
+              onClick={startAnalysisFlow}
+              disabled={hasScannedToday || analyzing}
+              className={
+                "group relative w-full overflow-hidden rounded-3xl border border-sky-200/60 bg-gradient-to-br from-slate-950/90 via-slate-950/80 to-slate-950/90 p-5 text-left shadow-[0_0_40px_rgba(15,23,42,0.9)] transition-all duration-200 " +
+                (hasScannedToday || analyzing
+                  ? "opacity-95"
+                  : "hover:-translate-y-0.5 hover:shadow-[0_0_60px_rgba(56,189,248,0.55)]")
+              }
+            >
+              <div className="pointer-events-none absolute inset-0 opacity-70 mix-blend-screen group-hover:opacity-100">
+                <div className="absolute -left-16 -top-16 h-44 w-44 rounded-full bg-sky-500/25 blur-3xl" />
+                <div className="absolute bottom-0 right-0 h-52 w-52 rounded-full bg-indigo-500/25 blur-3xl" />
+              </div>
 
-{/* STARDUST BUTTON / CARD */}
-<section>
-  <button
-    type="button"
-    onClick={startAnalysisFlow}
-    disabled={hasScannedToday || analyzing}
-    className={
-      "group relative w-full overflow-hidden rounded-3xl border border-sky-200/60 bg-gradient-to-br from-slate-950/90 via-slate-950/80 to-slate-950/90 p-5 text-left shadow-[0_0_40px_rgba(15,23,42,0.9)] transition-all duration-200 " +
-      (hasScannedToday || analyzing
-        ? "opacity-95"
-        : "hover:-translate-y-0.5 hover:shadow-[0_0_60px_rgba(56,189,248,0.55)]")
-    }
-  >
-    {/* Ambient glow */}
-    <div className="pointer-events-none absolute inset-0 opacity-70 mix-blend-screen group-hover:opacity-100">
-      <div className="absolute -left-16 -top-16 h-44 w-44 rounded-full bg-sky-500/25 blur-3xl" />
-      <div className="absolute bottom-0 right-0 h-52 w-52 rounded-full bg-indigo-500/25 blur-3xl" />
-    </div>
+              <div className="relative flex items-center gap-5">
+                <div className="relative flex h-[92px] w-[92px] flex-shrink-0 items-center justify-center">
+                  <div className="absolute inset-0 rounded-full bg-sky-400/10 blur-[1px] animate-pulse" />
+                  <div className="absolute inset-0 rounded-full border border-sky-200/70 opacity-85 shadow-[0_0_28px_rgba(56,189,248,0.35)] group-hover:shadow-[0_0_38px_rgba(56,189,248,0.55)] transition-shadow" />
+                  <div className="absolute inset-3 rounded-full bg-slate-900/75 ring-1 ring-white/10 backdrop-blur-md" />
+                  <span className="relative text-[11px] font-semibold uppercase tracking-[0.26em] text-sky-100/90">
+                    Scan
+                  </span>
+                </div>
 
-    <div className="relative flex items-center gap-5">
-      {/* PULSING SCAN BUTTON (bigger, no dot on text) */}
-      <div className="relative flex h-[92px] w-[92px] flex-shrink-0 items-center justify-center">
-        {/* Outer pulse glow */}
-        <div className="absolute inset-0 rounded-full bg-sky-400/10 blur-[1px] animate-pulse" />
+                <div className="flex-1">
+                  <p className="text-[15px] font-semibold uppercase tracking-[0.06em] text-white/92">
+                    Discover your daily Stardust Card
+                  </p>
+                  <p className="mt-1 text-[12px] text-slate-300/70">
+                    Powered by real-time moon and planet positions for your sign.
+                  </p>
+                </div>
+              </div>
+            </button>
+          </section>
 
-        {/* Ring */}
-        <div className="absolute inset-0 rounded-full border border-sky-200/70 opacity-85 shadow-[0_0_28px_rgba(56,189,248,0.35)] group-hover:shadow-[0_0_38px_rgba(56,189,248,0.55)] transition-shadow" />
-
-        {/* Inner glass */}
-        <div className="absolute inset-3 rounded-full bg-slate-900/75 ring-1 ring-white/10 backdrop-blur-md" />
-
-        {/* ✅ Removed center dot (it was crossing the word SCAN) */}
-
-        {/* Text INSIDE circle */}
-        <span className="relative text-[11px] font-semibold uppercase tracking-[0.26em] text-sky-100/90">
-          Scan
-        </span>
-      </div>
-
-      {/* Text */}
-      <div className="flex-1">
-        {/* ✅ Main title all caps */}
-        <p className="text-[15px] font-semibold uppercase tracking-[0.06em] text-white/92">
-          Discover your daily Stardust Card
-        </p>
-
-        {/* Secondary line */}
-        <p className="mt-1 text-[12px] text-slate-300/70">
-          Powered by real-time moon and planet positions for your sign.
-        </p>
-      </div>
-    </div>
-  </button>
-</section>
-
-{pinnedCardSlug && CARD_REGISTRY[pinnedCardSlug] && (
-  <section>
-    <PinnedCard card={CARD_REGISTRY[pinnedCardSlug]} />
-  </section>
-)}
-
-
-
-
-
+          {pinnedCardSlug && CARD_REGISTRY[pinnedCardSlug] && (
+            <section>
+              <PinnedCard card={CARD_REGISTRY[pinnedCardSlug]} />
+            </section>
+          )}
 
           {/* TAP SHARE + STAR SYNC */}
           <section className="pb-4">
@@ -1030,32 +1075,7 @@ function DashboardInner() {
           }
         }
 
-        .scanDot {
-          width: 7px;
-          height: 7px;
-          border-radius: 9999px;
-          background: rgba(56, 189, 248, 0.95);
-          box-shadow: 0 0 16px rgba(56, 189, 248, 0.75);
-          display: inline-block;
-          animation: scanDotPulse 0.9s ease-in-out infinite;
-        }
-
-        @keyframes scanDotPulse {
-          0% {
-            transform: scale(0.85);
-            opacity: 0.55;
-          }
-          50% {
-            transform: scale(1.2);
-            opacity: 1;
-          }
-          100% {
-            transform: scale(0.85);
-            opacity: 0.55;
-          }
-        }
-
-        /* NEW: meters typography tuning */
+        /* meters typography tuning (unchanged) */
         .metersTitle {
           font-size: 12px;
           font-weight: 700;
@@ -1066,7 +1086,7 @@ function DashboardInner() {
 
         .meterHead {
           font-size: 11px;
-          font-weight: 650; /* slightly bolder than the rest */
+          font-weight: 650;
           letter-spacing: 0.24em;
           text-transform: uppercase;
           color: rgba(226, 232, 240, 0.88);
@@ -1112,7 +1132,33 @@ function DashboardInner() {
             selectedFields={selectedFields}
             onProfileChange={handleProfileChange}
             onFieldToggle={handleFieldToggle}
-            onArm={handleArmBand}
+            onArm={async () => {
+              if (selectedFields.size === 0) return;
+              setSyncError(null);
+              setSyncStatus("syncing");
+
+              try {
+                const armedUntil = new Date(Date.now() + 60 * 1000);
+                setIsArmed(true);
+                setSecondsRemaining(60);
+
+                await syncTapShareToSupabase({
+                  tapshare_armed: true,
+                  fields: Array.from(selectedFields),
+                  armed_until: armedUntil,
+                });
+
+                setSyncStatus("idle");
+              } catch (e: any) {
+                setSyncStatus("idle");
+                setSyncError(
+                  e?.message ||
+                    "Arm failed. Check band id + Supabase configuration."
+                );
+                setIsArmed(false);
+                setSecondsRemaining(60);
+              }
+            }}
             onClose={() => {
               setShowTapShare(false);
               setSyncError(null);
