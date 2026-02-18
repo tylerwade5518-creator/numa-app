@@ -12,6 +12,8 @@ import DailyInstrumentPanel from "./DailyInstrumentPanel";
 /** Stardust Action Card registry + pinned renderer */
 import { CARD_REGISTRY, type CardId } from "../../lib/cardRegistry";
 import { PinnedCard } from "../components/PinnedCard";
+import StardustScanCTA from "./StardustScanCTA";
+
 
 /** Video ring meters */
 import VideoRingMeter from "./VideoRingMeter";
@@ -882,51 +884,39 @@ function DashboardInner() {
             </div>
           </section>
 
-          {/* STARDUST BUTTON / CARD */}
-          <section>
-            <button
-              type="button"
-              onClick={startAnalysisFlow}
-              disabled={hasScannedToday || analyzing}
-              className={
-                "group relative w-full overflow-hidden rounded-3xl border border-sky-200/60 bg-gradient-to-br from-slate-950/90 via-slate-950/80 to-slate-950/90 p-5 text-left shadow-[0_0_40px_rgba(15,23,42,0.9)] transition-all duration-200 " +
-                (hasScannedToday || analyzing
-                  ? "opacity-95"
-                  : "hover:-translate-y-0.5 hover:shadow-[0_0_60px_rgba(56,189,248,0.55)]")
-              }
-            >
-              <div className="pointer-events-none absolute inset-0 opacity-70 mix-blend-screen group-hover:opacity-100">
-                <div className="absolute -left-16 -top-16 h-44 w-44 rounded-full bg-sky-500/25 blur-3xl" />
-                <div className="absolute bottom-0 right-0 h-52 w-52 rounded-full bg-indigo-500/25 blur-3xl" />
-              </div>
+       {/* STARDUST BUTTON / CARD */}
+{(() => {
+  // ✅ TS-safe: treat registry as a string-keyed map for lookup
+  const registry = CARD_REGISTRY as Record<string, import("../../lib/cardRegistry").CardRecord>;
 
-              <div className="relative flex items-center gap-5">
-                <div className="relative flex h-[92px] w-[92px] flex-shrink-0 items-center justify-center">
-                  <div className="absolute inset-0 rounded-full bg-sky-400/10 blur-[1px] animate-pulse" />
-                  <div className="absolute inset-0 rounded-full border border-sky-200/70 opacity-85 shadow-[0_0_28px_rgba(56,189,248,0.35)] group-hover:shadow-[0_0_38px_rgba(56,189,248,0.55)] transition-shadow" />
-                  <div className="absolute inset-3 rounded-full bg-slate-900/75 ring-1 ring-white/10 backdrop-blur-md" />
-                  <span className="relative text-[11px] font-semibold uppercase tracking-[0.26em] text-sky-100/90">
-                    Scan
-                  </span>
-                </div>
+  const pinnedCard =
+    typeof pinnedCardSlug === "string" && pinnedCardSlug.length > 0
+      ? registry[pinnedCardSlug] ?? null
+      : null;
 
-                <div className="flex-1">
-                  <p className="text-[15px] font-semibold uppercase tracking-[0.06em] text-white/92">
-                    Discover your daily Stardust Card
-                  </p>
-                  <p className="mt-1 text-[12px] text-slate-300/70">
-                    Powered by real-time moon and planet positions for your sign.
-                  </p>
-                </div>
-              </div>
-            </button>
-          </section>
+  return (
+    <>
+      <section>
+       <StardustScanCTA
+  onScan={async () => {
+    await Promise.resolve(startAnalysisFlow());
+  }}
+  scanned={Boolean(pinnedCard)}
+/>
 
-          {pinnedCardSlug && CARD_REGISTRY[pinnedCardSlug] && (
-            <section>
-              <PinnedCard card={CARD_REGISTRY[pinnedCardSlug]} />
-            </section>
-          )}
+      </section>
+
+      {pinnedCard && (
+        <section className="mt-3">
+          <PinnedCard card={pinnedCard} />
+        </section>
+      )}
+    </>
+  );
+})()}
+
+
+
 
           {/* TAP SHARE + STAR SYNC */}
           <section className="pb-4">
