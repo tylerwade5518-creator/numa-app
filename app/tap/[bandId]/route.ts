@@ -1,4 +1,3 @@
-// app/tap/[bandId]/route.ts
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
@@ -19,7 +18,6 @@ function makeShareToken(): string {
   return crypto.randomUUID().replace(/-/g, "");
 }
 
-// IMPORTANT: "unclaimed" contains "claim" so never use includes("claim")
 function bandIsClaimed(band: any): boolean {
   const status = String(band?.status ?? "").toLowerCase().trim();
   return status === "claimed" || Boolean(band?.owner_user_id) || Boolean(band?.claimed_at);
@@ -31,6 +29,7 @@ async function findBandSmart(bandIdOrCode: string) {
     .select("*")
     .eq("band_code", bandIdOrCode)
     .maybeSingle();
+
   if (byCode.data && !byCode.error) return byCode;
 
   const byCodeIlike = await supabaseAdmin
@@ -38,6 +37,7 @@ async function findBandSmart(bandIdOrCode: string) {
     .select("*")
     .ilike("band_code", bandIdOrCode)
     .maybeSingle();
+
   if (byCodeIlike.data && !byCodeIlike.error) return byCodeIlike;
 
   const byId = await supabaseAdmin
@@ -47,6 +47,19 @@ async function findBandSmart(bandIdOrCode: string) {
     .maybeSingle();
 
   return byId;
+}
+
+async function createUnclaimedBand(bandCode: string) {
+  return await supabaseAdmin
+    .from("bands")
+    .insert({
+      band_code: bandCode,
+      status: "unclaimed",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .select("*")
+    .maybeSingle();
 }
 
 export async function GET(
@@ -60,28 +73,32 @@ export async function GET(
     return redirectTo(`/setup?band=`, req, "no_band_param");
   }
 
-  const { data: band, error: bandError } = await findBandSmart(bandIdOrCode);
+  let { data: band, error: bandError } = await findBandSmart(bandIdOrCode);
+
+  if (!band && !bandError) {
+    const created = await createUnclaimedBand(bandIdOrCode);
+    band = created.data;
+    bandError = created.error;
+  }
 
   if (bandError || !band) {
     return redirectTo(
       `/setup?band=${encodeURIComponent(bandIdOrCode)}`,
       req,
-      bandError ? "band_lookup_error" : "band_not_found"
+      bandError ? "band_create_error" : "band_not_found"
     );
   }
 
   const bandCode = String(band.band_code ?? bandIdOrCode).trim();
 
-  // Optional: if you want to allow Tap Share even before "claimed", comment this block out.
   const isClaimed = bandIsClaimed(band);
   if (!isClaimed) {
     return redirectTo(`/setup?band=${encodeURIComponent(bandCode)}`, req, "band_not_claimed");
   }
 
-  // ✅ CRITICAL: your band_state is keyed by band_id TEXT = bandCode (NUMA-TEST-002)
   const { data: stateRow, error: stateError } = await supabaseAdmin
     .from("band_state")
-    .select("band_id, band_code, tapshare_armed, tapshare_fields, tapshare_armed_until")
+    .select("band_id, band_code, tapshare_armed, tapshare_fields, tapshare_armed_until, starsync_armed, starsync_armed_at, starsync_used_at")
     .eq("band_id", bandCode)
     .maybeSingle();
 
@@ -89,21 +106,37 @@ export async function GET(
     return redirectTo(`/dashboard?band=${encodeURIComponent(bandCode)}`, req, "band_state_error");
   }
 
-  const armed = Boolean(stateRow?.tapshare_armed);
-
   const now = new Date();
   const nowIso = now.toISOString();
+
+  const starSyncArmed = Boolean(stateRow?.starsync_armed);
+  const starSyncUsed = Boolean(stateRow?.starsync_used_at);
+
+  if (starSyncArmed && !starSyncUsed) {
+    await supabaseAdmin
+      .from("band_state")
+      .update({
+        starsync_armed: false,
+        starsync_used_at: nowIso,
+        updated_at: nowIso,
+      })
+      .eq("band_id", bandCode);
+
+    return redirectTo(`/star-sync/guest?band=${encodeURIComponent(bandCode)}`, req, "ok_starsync");
+  }
+
+  const tapShareArmed = Boolean(stateRow?.tapshare_armed);
+
   const armedUntilIso = stateRow?.tapshare_armed_until
     ? new Date(stateRow.tapshare_armed_until as any).toISOString()
     : null;
 
   const notExpired = !armedUntilIso || armedUntilIso > nowIso;
 
-  if (armed && notExpired) {
+  if (tapShareArmed && notExpired) {
     const token = makeShareToken();
     const expiresAt = new Date(now.getTime() + 2 * 60 * 1000).toISOString();
 
-    // ✅ CRITICAL: share_tokens table uses band_code (NOT band_id)
     const { error: insertError } = await supabaseAdmin.from("share_tokens").insert({
       token,
       band_code: bandCode,
@@ -120,14 +153,6 @@ export async function GET(
     }
 
     return redirectTo(`/share/${token}`, req, "ok_share");
-  }
-
-  if (!armed) {
-    return redirectTo(`/dashboard?band=${encodeURIComponent(bandCode)}`, req, "not_armed");
-  }
-
-  if (!notExpired) {
-    return redirectTo(`/dashboard?band=${encodeURIComponent(bandCode)}`, req, "armed_expired");
   }
 
   return redirectTo(`/dashboard?band=${encodeURIComponent(bandCode)}`, req, "default_dashboard");
