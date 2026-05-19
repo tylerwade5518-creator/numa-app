@@ -24,10 +24,12 @@ function bandIsClaimed(band: any): boolean {
 }
 
 async function findBandSmart(bandIdOrCode: string) {
+  const cleanCode = String(bandIdOrCode ?? "").trim();
+
   const byCode = await supabaseAdmin
     .from("bands")
     .select("*")
-    .eq("band_code", bandIdOrCode)
+    .eq("band_code", cleanCode)
     .maybeSingle();
 
   if (byCode.data && !byCode.error) return byCode;
@@ -35,7 +37,7 @@ async function findBandSmart(bandIdOrCode: string) {
   const byCodeIlike = await supabaseAdmin
     .from("bands")
     .select("*")
-    .ilike("band_code", bandIdOrCode)
+    .ilike("band_code", cleanCode)
     .maybeSingle();
 
   if (byCodeIlike.data && !byCodeIlike.error) return byCodeIlike;
@@ -43,20 +45,26 @@ async function findBandSmart(bandIdOrCode: string) {
   const byId = await supabaseAdmin
     .from("bands")
     .select("*")
-    .eq("id", bandIdOrCode)
+    .eq("id", cleanCode)
     .maybeSingle();
 
   return byId;
 }
 
 async function createUnclaimedBand(bandCode: string) {
+  const nowIso = new Date().toISOString();
+  const cleanCode = String(bandCode ?? "").trim();
+
   return await supabaseAdmin
     .from("bands")
     .insert({
-      band_code: bandCode,
+      id: crypto.randomUUID(),
+      band_code: cleanCode,
       status: "unclaimed",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      owner_user_id: null,
+      claimed_at: null,
+      created_at: nowIso,
+      updated_at: nowIso,
     })
     .select("*")
     .maybeSingle();
@@ -92,13 +100,16 @@ export async function GET(
   const bandCode = String(band.band_code ?? bandIdOrCode).trim();
 
   const isClaimed = bandIsClaimed(band);
+
   if (!isClaimed) {
     return redirectTo(`/setup?band=${encodeURIComponent(bandCode)}`, req, "band_not_claimed");
   }
 
   const { data: stateRow, error: stateError } = await supabaseAdmin
     .from("band_state")
-    .select("band_id, band_code, tapshare_armed, tapshare_fields, tapshare_armed_until, starsync_armed, starsync_armed_at, starsync_used_at")
+    .select(
+      "band_id, band_code, tapshare_armed, tapshare_fields, tapshare_armed_until, starsync_armed, starsync_armed_at, starsync_used_at"
+    )
     .eq("band_id", bandCode)
     .maybeSingle();
 
