@@ -58,7 +58,6 @@ async function createUnclaimedBand(bandCode: string) {
   return await supabaseAdmin
     .from("bands")
     .insert({
-      id: crypto.randomUUID(),
       band_code: cleanCode,
       status: "unclaimed",
       owner_user_id: null,
