@@ -6,126 +6,18 @@ import { supabase } from "../../lib/supabase/client";
 import AnimatedSpaceBackground from "../dashboard/AnimatedSpaceBackground";
 
 const ZODIAC_SIGNS = [
-  "Aries",
-  "Taurus",
-  "Gemini",
-  "Cancer",
-  "Leo",
-  "Virgo",
-  "Libra",
-  "Scorpio",
-  "Sagittarius",
-  "Capricorn",
-  "Aquarius",
-  "Pisces",
+  "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
+  "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces",
 ] as const;
 
 type ZodiacSign = (typeof ZODIAC_SIGNS)[number];
-
-type ConnectionCategory = "friendship" | "romantic" | "business";
-type Lens = "strengths" | "challenges";
+type SyncType = "friendship" | "romantic";
+type Step = "input" | "scanning" | "results";
 
 const LAST_BAND_STORAGE_KEY = "numa:lastBandId";
 
-interface CompatibilityResult {
-  overall: number;
-  friendship: number;
-  romantic: number;
-  business: number;
-  overallSummary: string;
-  categorySummary: Record<ConnectionCategory, string>;
-  strengths: Record<ConnectionCategory, string[]>;
-  challenges: Record<ConnectionCategory, string[]>;
-}
-
 function clampInt(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
-}
-
-function getCompatibility(owner: ZodiacSign, other: ZodiacSign): CompatibilityResult {
-  const a = ZODIAC_SIGNS.indexOf(owner);
-  const b = ZODIAC_SIGNS.indexOf(other);
-  const diff = Math.abs(a - b);
-  const normalized = 1 - diff / (ZODIAC_SIGNS.length - 1);
-
-  const overall = clampInt(Math.round(48 + normalized * 44 + ((a + b) % 7) - 3), 25, 95);
-  const friendship = clampInt(Math.round(overall + ((a * 3 + b) % 9) - 4), 20, 98);
-  const romantic = clampInt(Math.round(overall + ((a + b * 2) % 11) - 6), 18, 98);
-  const business = clampInt(Math.round(overall + ((a * 2 + b * 3) % 10) - 5), 18, 98);
-
-  const overallSummary =
-    overall >= 82
-      ? "This connection feels naturally easy right now—quick understanding, smooth pacing, and strong momentum."
-      : overall >= 65
-      ? "There’s real potential here. You’ll click when you communicate clearly and stay flexible with each other’s style."
-      : "This connection can still be meaningful, but it works best with patience, honesty, and a little extra intention.";
-
-  const categorySummary: Record<ConnectionCategory, string> = {
-    friendship:
-      friendship >= 80
-        ? "As friends, you tend to ‘get’ each other fast. The bond feels light, loyal, and easy to keep going."
-        : friendship >= 65
-        ? "Friendship flows when you make space for different rhythms—one leads, the other steadies."
-        : "Friendship can grow here, but it needs consistency. Small check-ins beat big expectations.",
-    romantic:
-      romantic >= 80
-        ? "Romantic chemistry is high. You spark each other’s curiosity and feel pulled into the same orbit."
-        : romantic >= 65
-        ? "Romance builds steadily when you both stay direct about needs and don’t read between the lines too much."
-        : "Romance can work, but it’s a ‘slow-burn’ match—trust and emotional safety matter more than intensity.",
-    business:
-      business >= 80
-        ? "Together you’re efficient and motivated. Great for planning, building, and following through."
-        : business >= 65
-        ? "Work synergy is solid when roles are clear—one drives vision while the other keeps execution grounded."
-        : "Business works best with structure. Clear expectations and boundaries turn friction into productivity.",
-  };
-
-  const bucket = diff <= 2 ? "close" : diff <= 5 ? "mid" : "far";
-
-  const strengths: Record<ConnectionCategory, string[]> = {
-    friendship:
-      bucket === "close"
-        ? ["You share a similar pace, so plans are easy and low-stress.", "You recharge each other instead of draining each other."]
-        : bucket === "mid"
-        ? ["Different perspectives make conversations fun and surprising.", "You balance each other—one brings spark, the other brings steadiness."]
-        : ["You can teach each other a lot without competing.", "When you align on values, the bond becomes unusually loyal."],
-    romantic:
-      bucket === "close"
-        ? ["Strong emotional fluency—less guessing, more clarity.", "Physical/mental attraction tends to stay consistent over time."]
-        : bucket === "mid"
-        ? ["Chemistry grows through contrast—mystery keeps it exciting.", "You bring out confidence in each other when you stay honest."]
-        : ["The connection can feel ‘fated’ when you commit to understanding.", "You challenge each other to grow beyond comfort zones."],
-    business:
-      bucket === "close"
-        ? ["Aligned priorities make planning and execution smooth.", "You’ll naturally agree on standards and quality."]
-        : bucket === "mid"
-        ? ["Great division of labor—one leads strategy, one handles details.", "Problem-solving improves because you don’t think the same way."]
-        : ["High upside when roles are defined—big vision + strong accountability.", "You can create systems that last because you pressure-test decisions."],
-  };
-
-  const challenges: Record<ConnectionCategory, string[]> = {
-    friendship:
-      bucket === "close"
-        ? ["You might avoid hard conversations because things feel ‘fine’—say the small stuff early.", "Routines can get repetitive unless you intentionally add variety."]
-        : bucket === "mid"
-        ? ["One of you may feel unheard if decisions happen too fast—slow down when it matters.", "Different social styles can cause misreads (quiet ≠ upset, loud ≠ aggressive)."]
-        : ["Values can clash under stress—keep respect front and center.", "Consistency matters: if one disappears, the bond weakens quickly."],
-    romantic:
-      bucket === "close"
-        ? ["Comfort can turn into complacency—keep flirting with curiosity, not just routine.", "If both avoid conflict, issues can stack up quietly."]
-        : bucket === "mid"
-        ? ["Miscommunication can happen when expectations aren’t spoken—be explicit about needs.", "Intensity can spike then cool—pace yourselves and keep trust steady."]
-        : ["Different emotional languages can feel like distance—translate, don’t assume.", "Power struggles can show up—choose ‘team’ over winning."],
-    business:
-      bucket === "close"
-        ? ["You may mirror each other’s blind spots—invite outside feedback.", "If you agree too easily, big risks can be missed."]
-        : bucket === "mid"
-        ? ["Different decision styles can frustrate—set a process for final calls.", "Speed vs perfection can clash—define what ‘done’ means early."]
-        : ["Control issues can appear—roles, ownership, and boundaries must be written down.", "If communication gets sparse, trust drops—schedule consistent check-ins."],
-  };
-
-  return { overall, friendship, romantic, business, overallSummary, categorySummary, strengths, challenges };
 }
 
 function getSignFromDate(dateStr: string | null): ZodiacSign | null {
@@ -150,58 +42,184 @@ function getSignFromDate(dateStr: string | null): ZodiacSign | null {
   return "Pisces";
 }
 
-function BigMeter({ label, value, tone = "gold" }: { label: string; value: number; tone?: "gold" | "sky" }) {
-  const clamped = clampInt(value, 0, 100);
+function getScores(owner: ZodiacSign, other: ZodiacSign) {
+  const a = ZODIAC_SIGNS.indexOf(owner);
+  const b = ZODIAC_SIGNS.indexOf(other);
+  const diff = Math.abs(a - b);
+  const normalized = 1 - diff / (ZODIAC_SIGNS.length - 1);
 
-  const barClass =
-    tone === "gold"
-      ? "bg-gradient-to-r from-yellow-400/95 via-amber-300/95 to-yellow-200/95 shadow-[0_0_26px_rgba(250,204,21,0.55)]"
-      : "bg-gradient-to-r from-sky-300 via-cyan-300 to-emerald-300 shadow-[0_0_22px_rgba(56,189,248,0.55)]";
-
-  const borderClass = tone === "gold" ? "border-yellow-200/55" : "border-sky-200/55";
-
-  return (
-    <div className="space-y-2">
-      <div className="flex items-end justify-between gap-2">
-        <p className="text-[11px] uppercase tracking-[0.22em] text-slate-300">{label}</p>
-        <p className="text-2xl font-semibold text-slate-50">{clamped}%</p>
-      </div>
-      <div className={`h-5 overflow-hidden rounded-full border ${borderClass} bg-slate-950/80`}>
-        <div className={`h-full rounded-full ${barClass}`} style={{ width: `${clamped}%` }} />
-      </div>
-    </div>
+  const base = clampInt(
+    Math.round(48 + normalized * 44 + ((a + b) % 7) - 3),
+    25,
+    95
   );
+
+  return {
+    friendship: clampInt(Math.round(base + ((a * 3 + b) % 9) - 4), 20, 98),
+    romantic: clampInt(Math.round(base + ((a + b * 2) % 11) - 6), 18, 98),
+  };
 }
 
-function Segmented({
-  value,
-  onChange,
-  options,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  options: Array<{ id: string; label: string }>;
-}) {
+function getReading(type: SyncType, score: number) {
+  if (type === "friendship") {
+    if (score >= 80) return "Today’s conditions support easy conversation, shared timing, and a natural social rhythm.";
+    if (score >= 65) return "Today’s conditions work best when both people keep expectations simple and allow different pacing.";
+    return "Today’s conditions may need more patience, clearer signals, and smaller moments of consistency.";
+  }
+
+  if (score >= 80) return "Attraction moves easily today when curiosity stays grounded and communication stays direct.";
+  if (score >= 65) return "Romantic energy builds steadily today when both people stay honest about timing and expectations.";
+  return "Romantic energy may feel slower today, with trust and emotional safety mattering more than intensity.";
+}
+
+function CosmicHeroMeter({ value, type }: { value: number; type: SyncType }) {
+  const clamped = clampInt(value, 0, 100);
+  const radius = 142;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (clamped / 100) * circumference;
+  const isFriendship = type === "friendship";
+
+  const theme = isFriendship
+    ? {
+        subtitle: "Connection Alignment",
+        soft: "rgba(56,189,248,0.42)",
+        glow: "rgba(14,165,233,0.75)",
+        text: "text-sky-100",
+        muted: "text-sky-200/70",
+        gradientA: "#bff4ff",
+        gradientB: "#38bdf8",
+        gradientC: "#2563eb",
+        gradientD: "#c084fc",
+        orbA: "from-white/90",
+        orbB: "via-sky-300/85",
+        orbC: "to-violet-500/75",
+        shadow: "drop-shadow-[0_0_26px_rgba(56,189,248,0.75)]",
+      }
+    : {
+        subtitle: "Romantic Alignment",
+        soft: "rgba(236,72,153,0.42)",
+        glow: "rgba(236,72,153,0.78)",
+        text: "text-pink-100",
+        muted: "text-pink-200/70",
+        gradientA: "#ffe0f0",
+        gradientB: "#fb7185",
+        gradientC: "#ec4899",
+        gradientD: "#a855f7",
+        orbA: "from-white/90",
+        orbB: "via-pink-300/85",
+        orbC: "to-fuchsia-500/75",
+        shadow: "drop-shadow-[0_0_26px_rgba(236,72,153,0.8)]",
+      };
+
   return (
-    <div className="grid grid-cols-3 gap-2">
-      {options.map((opt) => {
-        const active = value === opt.id;
-        return (
-          <button
-            key={opt.id}
-            type="button"
-            onClick={() => onChange(opt.id)}
-            className={
-              "rounded-2xl border px-3 py-2 text-xs transition " +
-              (active
-                ? "border-sky-300/90 bg-slate-900/95 text-sky-50 shadow-[0_0_22px_rgba(56,189,248,0.45)]"
-                : "border-slate-600/70 bg-slate-950/80 text-slate-100 hover:border-slate-400")
-            }
+    <div className="relative mx-auto flex h-[450px] w-full max-w-[450px] items-center justify-center overflow-visible sm:h-[580px] sm:max-w-[580px]">
+      <div className="absolute h-[350px] w-[350px] rounded-full blur-3xl sm:h-[470px] sm:w-[470px]" style={{ background: theme.soft }} />
+      <div className="absolute h-[375px] w-[375px] rounded-full border border-white/10 bg-black/10 shadow-[inset_0_0_45px_rgba(255,255,255,0.04)] sm:h-[500px] sm:w-[500px]" />
+      <div className="absolute h-[350px] w-[350px] animate-[spin_54s_linear_infinite] rounded-full border border-white/10 sm:h-[470px] sm:w-[470px]" />
+      <div className="absolute h-[315px] w-[315px] animate-[spin_38s_linear_infinite_reverse] rounded-full border border-white/5 sm:h-[420px] sm:w-[420px]" />
+
+      <svg className="relative z-10 h-[360px] w-[360px] -rotate-90 overflow-visible sm:h-[500px] sm:w-[500px]" viewBox="0 0 360 360">
+        <defs>
+          <linearGradient id={`syncGradient-${type}`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor={theme.gradientA} />
+            <stop offset="18%" stopColor="#ffffff" />
+            <stop offset="38%" stopColor={theme.gradientB} />
+            <stop offset="68%" stopColor={theme.gradientC} />
+            <stop offset="100%" stopColor={theme.gradientD} />
+          </linearGradient>
+
+          <filter id={`heavyGlow-${type}`}>
+            <feGaussianBlur stdDeviation="10" result="coloredBlur" />
+            <feMerge>
+              <feMergeNode in="coloredBlur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        <circle cx="180" cy="180" r="160" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="2" />
+        <circle cx="180" cy="180" r={radius} fill="none" stroke="rgba(255,255,255,0.09)" strokeWidth="30" />
+
+        <circle
+          cx="180"
+          cy="180"
+          r={radius}
+          fill="none"
+          stroke="rgba(2,6,23,0.72)"
+          strokeWidth="30"
+          strokeDasharray={`${circumference * 0.13} ${circumference}`}
+          strokeDashoffset={-circumference * 0.09}
+        />
+
+        <circle
+          cx="180"
+          cy="180"
+          r={radius}
+          fill="none"
+          stroke={`url(#syncGradient-${type})`}
+          strokeWidth="30"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          filter={`url(#heavyGlow-${type})`}
+          className="transition-all duration-1000 ease-out"
+        />
+
+        <circle cx="180" cy="180" r="111" fill="rgba(2,6,23,0.93)" stroke="rgba(255,255,255,0.08)" strokeWidth="1.5" />
+
+        {Array.from({ length: 48 }).map((_, i) => {
+          const angle = (i / 48) * 360;
+          return (
+            <line
+              key={i}
+              x1="180"
+              y1="54"
+              x2="180"
+              y2={i % 4 === 0 ? "65" : "61"}
+              stroke={i % 4 === 0 ? theme.gradientA : "rgba(255,255,255,0.16)"}
+              strokeWidth={i % 4 === 0 ? "1.2" : "0.8"}
+              transform={`rotate(${angle} 180 180)`}
+            />
+          );
+        })}
+
+        <circle cx="180" cy="180" r="94" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
+      </svg>
+
+      <div className="absolute z-30 h-[372px] w-[372px] animate-[spin_15s_linear_infinite] sm:h-[500px] sm:w-[500px]">
+        <div
+          className={`absolute left-[15%] top-[74%] h-9 w-9 rounded-full border border-white/80 bg-gradient-to-br ${theme.orbA} ${theme.orbB} ${theme.orbC} backdrop-blur-md sm:h-12 sm:w-12`}
+          style={{ boxShadow: `0 0 24px ${theme.glow}, inset 0 0 18px rgba(255,255,255,0.35)` }}
+        >
+          <div className="absolute left-1/2 top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white" style={{ boxShadow: `0 0 24px ${theme.glow}` }} />
+        </div>
+      </div>
+
+      <div className="absolute z-20 flex flex-col items-center justify-center text-center">
+        <div className="mb-4 text-lg opacity-80">{isFriendship ? "☊" : "♡"}</div>
+
+        <p className="text-[11px] uppercase tracking-[0.48em] text-slate-100/90 sm:text-xs">
+          Star Sync
+        </p>
+
+        <div className="mt-4 flex items-start justify-center overflow-visible pl-2">
+          <span
+            className={`bg-gradient-to-br from-white via-white to-slate-300 bg-clip-text text-[80px] font-light leading-none tracking-[-0.035em] text-transparent sm:text-[112px] ${theme.shadow}`}
+            style={{ WebkitTextStroke: "1px rgba(255,255,255,0.16)" }}
           >
-            {opt.label}
-          </button>
-        );
-      })}
+            {clamped}
+          </span>
+          <span className={`ml-4 mt-5 text-4xl font-light sm:ml-5 sm:mt-8 sm:text-5xl ${theme.text}`}>%</span>
+        </div>
+
+        <p className={`mt-2 text-lg font-medium sm:text-2xl ${theme.text}`}>
+          {clamped >= 80 ? "Strong Alignment" : clamped >= 65 ? "Steady Alignment" : "Soft Alignment"}
+        </p>
+
+        <p className={`mt-1 text-xs uppercase tracking-[0.28em] ${theme.muted}`}>
+          {theme.subtitle}
+        </p>
+      </div>
     </div>
   );
 }
@@ -215,6 +233,12 @@ function StarSyncContent() {
   const [bandId, setBandId] = useState("");
   const [armStatus, setArmStatus] = useState<"idle" | "arming" | "armed" | "error">("idle");
   const [armError, setArmError] = useState<string | null>(null);
+
+  const [step, setStep] = useState<Step>("input");
+  const [mode, setMode] = useState<"sign" | "birthday">("birthday");
+  const [otherSign, setOtherSign] = useState<ZodiacSign | "">("");
+  const [birthday, setBirthday] = useState("");
+  const [syncType, setSyncType] = useState<SyncType>("friendship");
 
   useEffect(() => {
     const bandFromUrl = searchParams.get("band") || "";
@@ -261,33 +285,27 @@ function StarSyncContent() {
     setArmStatus("armed");
   };
 
-  const [mode, setMode] = useState<"sign" | "birthday">("sign");
-  const [otherSign, setOtherSign] = useState<ZodiacSign | "">("");
-  const [birthday, setBirthday] = useState("");
-
   const otherSignFromBirthday = useMemo(() => getSignFromDate(birthday), [birthday]);
 
   const effectiveOtherSign: ZodiacSign | null =
     mode === "birthday" ? otherSignFromBirthday : otherSign !== "" ? otherSign : null;
 
-  const result: CompatibilityResult | null = useMemo(() => {
+  const scores = useMemo(() => {
     if (!effectiveOtherSign) return null;
-    return getCompatibility(ownerSign, effectiveOtherSign);
+    return getScores(ownerSign, effectiveOtherSign);
   }, [ownerSign, effectiveOtherSign]);
 
-  const [category, setCategory] = useState<ConnectionCategory>("friendship");
-  const [lens, setLens] = useState<Lens>("strengths");
+  const activeScore = scores ? scores[syncType] : 0;
+  const activeReading = getReading(syncType, activeScore);
 
-  const categoryValue = result
-    ? category === "friendship"
-      ? result.friendship
-      : category === "romantic"
-      ? result.romantic
-      : result.business
-    : 0;
+  const runStarSync = () => {
+    if (!effectiveOtherSign) return;
+    setStep("scanning");
 
-  const categorySummary = result ? result.categorySummary[category] : "";
-  const listItems = result ? (lens === "strengths" ? result.strengths[category] : result.challenges[category]) : [];
+    setTimeout(() => {
+      setStep("results");
+    }, 1800);
+  };
 
   return (
     <div
@@ -299,7 +317,7 @@ function StarSyncContent() {
         backgroundRepeat: "no-repeat",
       }}
     >
-      <div className="pointer-events-none absolute inset-0 bg-slate-950/20" />
+      <div className="pointer-events-none absolute inset-0 bg-slate-950/30" />
       <AnimatedSpaceBackground />
 
       <main className="relative z-10 mx-auto flex min-h-screen max-w-3xl flex-col gap-5 px-4 py-6 sm:py-8">
@@ -317,7 +335,7 @@ function StarSyncContent() {
               Star Sync
             </p>
             <p className="mt-1 text-sm text-slate-100">
-              Compare your alignment with someone else.
+              Arm your band or run a private alignment scan.
             </p>
           </div>
 
@@ -332,7 +350,7 @@ function StarSyncContent() {
                   Arm Star Sync
                 </p>
                 <p className="mt-1 text-sm leading-relaxed text-slate-100/90">
-                  Arm your band so the next person who taps it opens a guest Star Sync page on their phone.
+                  Arm your band so the next person who taps it opens the guest Star Sync experience.
                 </p>
                 <p className="mt-2 text-[11px] text-slate-400">
                   Band ID:{" "}
@@ -365,7 +383,7 @@ function StarSyncContent() {
 
             {armStatus === "armed" && (
               <div className="mt-4 rounded-2xl border border-emerald-200/30 bg-emerald-400/10 p-3 text-sm text-slate-100">
-                Ready. Have someone tap your band now. This works for the next tap only, then turns off.
+                Ready. Have someone tap your band now. They’ll get the guest version with the purchase button.
               </div>
             )}
 
@@ -377,227 +395,198 @@ function StarSyncContent() {
           </div>
         </section>
 
-        <section>
-          <div className="rounded-3xl border border-slate-600/80 bg-slate-950/85 p-4 sm:p-5 backdrop-blur-xl shadow-[0_0_30px_rgba(0,0,0,0.85)]">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.22em] text-slate-400">
-                  Band Owner
-                </p>
-                <p className="mt-1 text-base font-semibold text-slate-100">
-                  {ownerSign}
-                </p>
-              </div>
+        {step === "input" && (
+          <section>
+            <div className="rounded-3xl border border-white/15 bg-slate-950/85 p-5 backdrop-blur-xl shadow-[0_0_34px_rgba(15,23,42,0.9)]">
+              <p className="text-center text-[11px] uppercase tracking-[0.28em] text-sky-200/90">
+                Private Star Sync
+              </p>
+              <h1 className="mt-2 text-center text-3xl font-semibold text-slate-50 sm:text-4xl">
+                Interaction Scan
+              </h1>
+              <p className="mx-auto mt-3 max-w-md text-center text-sm leading-relaxed text-slate-200/90">
+                Enter someone’s sign or birthday to see the same alignment meter they would see after tapping your band.
+              </p>
 
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setMode("sign")}
-                  className={
-                    "rounded-full border px-3 py-1.5 text-xs transition " +
-                    (mode === "sign"
-                      ? "border-sky-300/90 bg-slate-900/95 text-sky-50"
-                      : "border-slate-600/70 bg-slate-950/80 text-slate-200 hover:border-slate-400")
-                  }
-                >
-                  Their Sign
-                </button>
+              <div className="mt-6 grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => setMode("birthday")}
                   className={
-                    "rounded-full border px-3 py-1.5 text-xs transition " +
+                    "rounded-2xl border px-3 py-2 text-xs transition " +
                     (mode === "birthday"
-                      ? "border-sky-300/90 bg-slate-900/95 text-sky-50"
-                      : "border-slate-600/70 bg-slate-950/80 text-slate-200 hover:border-slate-400")
+                      ? "border-sky-300/90 bg-slate-900/95 text-sky-50 shadow-[0_0_22px_rgba(56,189,248,0.45)]"
+                      : "border-slate-600/70 bg-slate-950/80 text-slate-100 hover:border-slate-400")
                   }
                 >
-                  Their Birthday
+                  Enter Birthday
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setMode("sign")}
+                  className={
+                    "rounded-2xl border px-3 py-2 text-xs transition " +
+                    (mode === "sign"
+                      ? "border-sky-300/90 bg-slate-900/95 text-sky-50 shadow-[0_0_22px_rgba(56,189,248,0.45)]"
+                      : "border-slate-600/70 bg-slate-950/80 text-slate-100 hover:border-slate-400")
+                  }
+                >
+                  Select Sign
                 </button>
               </div>
-            </div>
 
-            <div className="mt-4">
-              {mode === "sign" ? (
-                <div>
-                  <label className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
-                    Select their sign
-                  </label>
-                  <select
-                    value={otherSign}
-                    onChange={(e) => setOtherSign(e.target.value as ZodiacSign | "")}
-                    className="mt-2 w-full rounded-2xl border border-slate-600/80 bg-slate-950/90 px-3 py-2 text-sm text-slate-100 outline-none focus:border-sky-300"
-                  >
-                    <option value="">Select sign</option>
-                    {ZODIAC_SIGNS.map((sign) => (
-                      <option key={sign} value={sign}>
-                        {sign}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ) : (
-                <div>
-                  <label className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
-                    Enter their birthday
-                  </label>
-                  <input
-                    type="date"
-                    value={birthday}
-                    onChange={(e) => setBirthday(e.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-slate-600/80 bg-slate-950/90 px-3 py-2 text-sm text-slate-100 outline-none focus:border-sky-300"
-                  />
-                  {birthday && otherSignFromBirthday && (
-                    <p className="mt-2 text-xs text-slate-200">
-                      Detected sign:{" "}
-                      <span className="font-semibold">{otherSignFromBirthday}</span>
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
-
-        {effectiveOtherSign && result && (
-          <>
-            <section>
-              <div className="rounded-3xl border border-yellow-200/50 bg-gradient-to-b from-slate-950/90 via-slate-950/95 to-slate-950/98 p-4 sm:p-5 backdrop-blur-xl shadow-[0_0_40px_rgba(0,0,0,0.9)]">
-                <p className="text-[11px] uppercase tracking-[0.22em] text-yellow-100/90">
-                  Overall Compatibility
-                </p>
-                <p className="mt-2 text-sm text-slate-100">
-                  {ownerSign} × {effectiveOtherSign}
-                </p>
-
-                <div className="mt-4">
-                  <BigMeter label="Overall Connection" value={result.overall} tone="gold" />
-                </div>
-
-                <p className="mt-4 text-sm leading-relaxed text-slate-100/90">
-                  {result.overallSummary}
-                </p>
-
-                <p className="mt-3 text-[11px] text-slate-400">
-                  Next: pick the connection type to explore it deeper.
-                </p>
-              </div>
-            </section>
-
-            <section>
-              <div className="rounded-3xl border border-sky-200/40 bg-slate-950/85 p-4 sm:p-5 backdrop-blur-xl shadow-[0_0_30px_rgba(15,23,42,0.85)]">
-                <p className="text-[11px] uppercase tracking-[0.22em] text-sky-200/90">
-                  Explore this connection
-                </p>
-                <p className="mt-1 text-xs text-slate-200">
-                  Choose the lens you care about right now.
-                </p>
-
-                <div className="mt-3">
-                  <Segmented
-                    value={category}
-                    onChange={(v) => {
-                      setCategory(v as ConnectionCategory);
-                      setLens("strengths");
-                    }}
-                    options={[
-                      { id: "friendship", label: "Friendship" },
-                      { id: "romantic", label: "Romantic" },
-                      { id: "business", label: "Business" },
-                    ]}
-                  />
-                </div>
-              </div>
-            </section>
-
-            <section>
-              <div className="rounded-3xl border border-slate-600/80 bg-slate-950/85 p-4 sm:p-5 backdrop-blur-xl shadow-[0_0_30px_rgba(0,0,0,0.85)]">
-                <p className="text-[11px] uppercase tracking-[0.22em] text-slate-300">
-                  {category === "friendship"
-                    ? "Friendship Dynamics"
-                    : category === "romantic"
-                    ? "Romantic Connection"
-                    : "Work & Ambition"}
-                </p>
-
-                <div className="mt-4">
-                  <BigMeter
-                    label={
-                      category === "friendship"
-                        ? "Friendship Compatibility"
-                        : category === "romantic"
-                        ? "Romantic Compatibility"
-                        : "Business Compatibility"
-                    }
-                    value={categoryValue}
-                    tone="sky"
-                  />
-                </div>
-
-                <p className="mt-4 text-sm leading-relaxed text-slate-100/90">
-                  {categorySummary}
-                </p>
-              </div>
-            </section>
-
-            <section className="mb-6">
-              <div className="rounded-3xl border border-yellow-200/40 bg-slate-950/90 p-4 sm:p-5 backdrop-blur-xl shadow-[0_0_40px_rgba(0,0,0,0.9)]">
-                <div className="flex items-center justify-between gap-3">
+              <div className="mt-5">
+                {mode === "birthday" ? (
                   <div>
-                    <p className="text-[11px] uppercase tracking-[0.22em] text-yellow-100/90">
-                      {lens === "strengths" ? "Strengths" : "Challenges"}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-200">
-                      {lens === "strengths"
-                        ? "What works well between you right now."
-                        : "What to watch for so it doesn’t drift off course."}
-                    </p>
+                    <label className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
+                      Their birthday
+                    </label>
+                    <input
+                      type="date"
+                      value={birthday}
+                      onChange={(e) => setBirthday(e.target.value)}
+                      className="mt-2 w-full rounded-2xl border border-slate-600/80 bg-slate-950/90 px-3 py-3 text-sm text-slate-100 outline-none focus:border-sky-300"
+                    />
+
+                    {birthday && otherSignFromBirthday && (
+                      <p className="mt-3 text-xs text-slate-200">
+                        Detected sign:{" "}
+                        <span className="font-semibold text-sky-200">
+                          {otherSignFromBirthday}
+                        </span>
+                      </p>
+                    )}
                   </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setLens("strengths")}
-                      className={
-                        "rounded-full border px-3 py-1.5 text-xs transition " +
-                        (lens === "strengths"
-                          ? "border-yellow-200/80 bg-gradient-to-r from-yellow-400/95 via-amber-300/95 to-yellow-200/95 text-slate-950"
-                          : "border-slate-600/70 bg-slate-950/80 text-slate-200 hover:border-slate-400")
-                      }
+                ) : (
+                  <div>
+                    <label className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
+                      Their sign
+                    </label>
+                    <select
+                      value={otherSign}
+                      onChange={(e) => setOtherSign(e.target.value as ZodiacSign | "")}
+                      className="mt-2 w-full rounded-2xl border border-slate-600/80 bg-slate-950/90 px-3 py-3 text-sm text-slate-100 outline-none focus:border-sky-300"
                     >
-                      Strengths
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setLens("challenges")}
-                      className={
-                        "rounded-full border px-3 py-1.5 text-xs transition " +
-                        (lens === "challenges"
-                          ? "border-yellow-200/80 bg-gradient-to-r from-yellow-400/95 via-amber-300/95 to-yellow-200/95 text-slate-950"
-                          : "border-slate-600/70 bg-slate-950/80 text-slate-200 hover:border-slate-400")
-                      }
-                    >
-                      Challenges
-                    </button>
+                      <option value="">Select sign</option>
+                      {ZODIAC_SIGNS.map((sign) => (
+                        <option key={sign} value={sign}>
+                          {sign}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                </div>
+                )}
+              </div>
 
-                <div className="mt-4 grid gap-2">
-                  {listItems.map((t, idx) => (
-                    <div
-                      key={idx}
-                      className="rounded-2xl border border-white/10 bg-slate-900/50 px-3 py-2 text-sm text-slate-100/90"
-                    >
-                      {t}
-                    </div>
-                  ))}
-                </div>
+              <button
+                type="button"
+                onClick={runStarSync}
+                disabled={!effectiveOtherSign}
+                className={
+                  "mt-5 w-full rounded-2xl border px-4 py-3 text-sm font-semibold transition " +
+                  (!effectiveOtherSign
+                    ? "cursor-not-allowed border-slate-700 bg-slate-900 text-slate-500"
+                    : "border-yellow-200/80 bg-gradient-to-r from-yellow-400/95 via-amber-300/95 to-yellow-200/95 text-slate-950 shadow-[0_0_30px_rgba(250,204,21,0.55)] hover:brightness-110")
+                }
+              >
+                Run Star Sync
+              </button>
 
-                <p className="mt-4 text-[11px] text-slate-400">
-                  These insights are a lightweight preview. Later we can make this feel more real-time
-                  by mixing in the day’s sky positions + your meters.
+              <p className="mt-4 text-center text-[11px] uppercase tracking-[0.18em] text-slate-500">
+                Owner Preview Mode
+              </p>
+            </div>
+          </section>
+        )}
+
+        {step === "scanning" && (
+          <section className="flex min-h-[48vh] items-center justify-center">
+            <div className="w-full rounded-3xl border border-sky-200/45 bg-slate-950/85 p-8 text-center backdrop-blur-xl shadow-[0_0_44px_rgba(56,189,248,0.26)]">
+              <div className="relative mx-auto mb-6 h-24 w-24">
+                <div className="absolute inset-0 rounded-full bg-sky-400/20 blur-2xl" />
+                <div className="absolute inset-0 animate-spin rounded-full border border-sky-300/70 border-t-transparent shadow-[0_0_25px_rgba(56,189,248,0.7)]" />
+                <div className="relative flex h-full w-full items-center justify-center rounded-full bg-slate-900/90">
+                  <span className="text-xs font-semibold text-sky-100">SYNC</span>
+                </div>
+              </div>
+
+              <p className="text-[11px] uppercase tracking-[0.26em] text-sky-200/90">
+                Star Sync
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-50">
+                Reading current conditions
+              </h2>
+              <p className="mt-3 text-sm text-slate-300">
+                Comparing sign profiles with today’s sky pattern.
+              </p>
+            </div>
+          </section>
+        )}
+
+        {step === "results" && effectiveOtherSign && scores && (
+          <>
+            <section className="text-center">
+              <p className="text-[11px] uppercase tracking-[0.28em] text-sky-200/90">
+                Owner Star Sync
+              </p>
+              <h1 className="mt-2 text-3xl font-semibold text-slate-50 sm:text-4xl">
+                Current Alignment
+              </h1>
+              <p className="mt-2 text-sm text-slate-300">
+                {ownerSign} × {effectiveOtherSign}
+              </p>
+            </section>
+
+            <section>
+              <div className="mx-auto grid max-w-xl grid-cols-2 overflow-hidden rounded-full border border-white/15 bg-slate-950/70 p-1 backdrop-blur-xl shadow-[0_0_28px_rgba(15,23,42,0.85)]">
+                <button
+                  type="button"
+                  onClick={() => setSyncType("friendship")}
+                  className={
+                    "rounded-full px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] transition " +
+                    (syncType === "friendship"
+                      ? "bg-sky-300/15 text-sky-50 shadow-[0_0_22px_rgba(56,189,248,0.55)]"
+                      : "text-slate-300 hover:text-slate-100")
+                  }
+                >
+                  Friendship
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSyncType("romantic")}
+                  className={
+                    "rounded-full px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] transition " +
+                    (syncType === "romantic"
+                      ? "bg-pink-300/15 text-pink-50 shadow-[0_0_22px_rgba(236,72,153,0.55)]"
+                      : "text-slate-300 hover:text-slate-100")
+                  }
+                >
+                  Romance
+                </button>
+              </div>
+            </section>
+
+            <section className="-mt-4">
+              <CosmicHeroMeter value={activeScore} type={syncType} />
+
+              <div className="mx-auto -mt-8 max-w-2xl rounded-[2rem] border border-white/15 bg-slate-950/78 px-6 py-6 text-center backdrop-blur-xl shadow-[0_0_38px_rgba(15,23,42,0.8)]">
+                <p className="text-xl leading-relaxed text-slate-100/95 sm:text-2xl">
+                  {activeReading}
+                </p>
+                <p className="mt-5 text-[11px] uppercase tracking-[0.28em] text-slate-500">
+                  Based on today’s sky conditions
                 </p>
               </div>
+
+              <button
+                type="button"
+                onClick={() => setStep("input")}
+                className="mx-auto mt-5 flex w-full max-w-2xl items-center justify-center rounded-full border border-slate-500/70 bg-slate-950/80 px-6 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-200 transition hover:border-sky-300/80 hover:text-sky-100"
+              >
+                Run Another Scan
+              </button>
             </section>
           </>
         )}
