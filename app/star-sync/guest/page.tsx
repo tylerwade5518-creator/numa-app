@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AnimatedSpaceBackground from "../../dashboard/AnimatedSpaceBackground";
 
@@ -257,7 +257,7 @@ function CosmicHeroMeter({
   );
 }
 
-export default function StarSyncGuestPage() {
+function StarSyncGuestContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -518,5 +518,13 @@ export default function StarSyncGuestPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function StarSyncGuestPage() {
+  return (
+    <Suspense fallback={null}>
+      <StarSyncGuestContent />
+    </Suspense>
   );
 }

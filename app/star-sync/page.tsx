@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../../lib/supabase/client";
 import AnimatedSpaceBackground from "../dashboard/AnimatedSpaceBackground";
@@ -36,6 +36,10 @@ interface CompatibilityResult {
   categorySummary: Record<ConnectionCategory, string>;
   strengths: Record<ConnectionCategory, string[]>;
   challenges: Record<ConnectionCategory, string[]>;
+}
+
+function clampInt(n: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, n));
 }
 
 function getCompatibility(owner: ZodiacSign, other: ZodiacSign): CompatibilityResult {
@@ -146,10 +150,6 @@ function getSignFromDate(dateStr: string | null): ZodiacSign | null {
   return "Pisces";
 }
 
-function clampInt(n: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, n));
-}
-
 function BigMeter({ label, value, tone = "gold" }: { label: string; value: number; tone?: "gold" | "sky" }) {
   const clamped = clampInt(value, 0, 100);
 
@@ -173,7 +173,15 @@ function BigMeter({ label, value, tone = "gold" }: { label: string; value: numbe
   );
 }
 
-function Segmented({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: Array<{ id: string; label: string }> }) {
+function Segmented({
+  value,
+  onChange,
+  options,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: Array<{ id: string; label: string }>;
+}) {
   return (
     <div className="grid grid-cols-3 gap-2">
       {options.map((opt) => {
@@ -198,7 +206,7 @@ function Segmented({ value, onChange, options }: { value: string; onChange: (v: 
   );
 }
 
-export default function StarSyncPage() {
+function StarSyncContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -595,5 +603,13 @@ export default function StarSyncPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function StarSyncPage() {
+  return (
+    <Suspense fallback={null}>
+      <StarSyncContent />
+    </Suspense>
   );
 }
