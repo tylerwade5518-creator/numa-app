@@ -1,70 +1,281 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "date": "2026-02-16",
   "sky": {
     "moonPhaseLabel": "Waxing Quarter",
-    "moonSignLabel": "Leo"
+    "moonSignLabel": "Leo",
+    "dailyTheme": "Warm confidence, honest signals, and visible connection."
   },
   "signs": {
     "Aries": {
-      "horoscope": { "title": "TEST TITLE", "summary": "TEST SUMMARY" },
-      "meters": { "energy": 50, "connection": 50, "flow": 50 },
-      "metersHero": "Today is a day to make moves — energy is steady."
+      "horoscope": {
+        "title": "Forward Spark",
+        "summary": "Move with confidence today, but let timing do some of the work. A direct message or simple action carries more power than overexplaining."
+      },
+      "meters": { "energy": 76, "connection": 64, "flow": 58 },
+      "metersHero": "Energy is rising — make the first move."
     },
     "Taurus": {
-      "horoscope": { "title": "TEST TITLE", "summary": "TEST SUMMARY" },
-      "meters": { "energy": 50, "connection": 50, "flow": 50 },
-      "metersHero": "Today is a day to settle in — flow is steady."
+      "horoscope": {
+        "title": "Steady Pull",
+        "summary": "Today favors calm progress and grounded choices. Let consistency become your signal instead of trying to force momentum."
+      },
+      "meters": { "energy": 55, "connection": 72, "flow": 68 },
+      "metersHero": "Flow is steady — trust the slower rhythm."
     },
     "Gemini": {
-      "horoscope": { "title": "TEST TITLE", "summary": "TEST SUMMARY" },
-      "meters": { "energy": 50, "connection": 50, "flow": 50 },
-      "metersHero": "Today is a day to connect — connection is steady."
+      "horoscope": {
+        "title": "Open Channel",
+        "summary": "Conversations carry extra charge today. Say the thing clearly, then give people room to meet you halfway."
+      },
+      "meters": { "energy": 69, "connection": 88, "flow": 61 },
+      "metersHero": "Connection is high — reach out."
     },
     "Cancer": {
-      "horoscope": { "title": "TEST TITLE", "summary": "TEST SUMMARY" },
-      "meters": { "energy": 50, "connection": 50, "flow": 50 },
-      "metersHero": "Today is a day to protect your energy — flow is steady."
+      "horoscope": {
+        "title": "Protected Light",
+        "summary": "Your instincts are sharper than usual. Move gently, but don’t ignore the quiet information your body already has."
+      },
+      "meters": { "energy": 48, "connection": 74, "flow": 59 },
+      "metersHero": "Protect your energy — listen first."
     },
     "Leo": {
-      "horoscope": { "title": "TEST TITLE", "summary": "TEST SUMMARY" },
-      "meters": { "energy": 50, "connection": 50, "flow": 50 },
-      "metersHero": "Today is a day to lead — energy is steady."
+      "horoscope": {
+        "title": "Visible Flame",
+        "summary": "The day responds to presence. Lead with warmth, not pressure, and the right people will naturally orbit closer."
+      },
+      "meters": { "energy": 84, "connection": 79, "flow": 66 },
+      "metersHero": "Your signal is bright — be seen."
     },
     "Virgo": {
-      "horoscope": { "title": "TEST TITLE", "summary": "TEST SUMMARY" },
-      "meters": { "energy": 50, "connection": 50, "flow": 50 },
-      "metersHero": "Today is a day to refine — flow is steady."
+      "horoscope": {
+        "title": "Clean Signal",
+        "summary": "Small refinements create real movement today. Fix the detail, send the note, clean up the system, and momentum returns."
+      },
+      "meters": { "energy": 63, "connection": 57, "flow": 81 },
+      "metersHero": "Flow is strong — refine the path."
     },
     "Libra": {
-      "horoscope": { "title": "TEST TITLE", "summary": "TEST SUMMARY" },
-      "meters": { "energy": 50, "connection": 50, "flow": 50 },
-      "metersHero": "Today is a day to harmonize — connection is steady."
+      "horoscope": {
+        "title": "Magnetic Balance",
+        "summary": "People are reading your tone more than your words today. Stay elegant, honest, and willing to name what feels off."
+      },
+      "meters": { "energy": 58, "connection": 86, "flow": 70 },
+      "metersHero": "Connection is high — harmonize."
     },
     "Scorpio": {
-      "horoscope": { "title": "TEST TITLE", "summary": "TEST SUMMARY" },
-      "meters": { "energy": 50, "connection": 50, "flow": 50 },
-      "metersHero": "Today is a day to go deep — flow is steady."
+      "horoscope": {
+        "title": "Deep Current",
+        "summary": "Today rewards emotional precision. Don’t reveal everything at once, but don’t hide from what you already know."
+      },
+      "meters": { "energy": 67, "connection": 62, "flow": 77 },
+      "metersHero": "Depth is working — trust the current."
     },
     "Sagittarius": {
-      "horoscope": { "title": "TEST TITLE", "summary": "TEST SUMMARY" },
-      "meters": { "energy": 50, "connection": 50, "flow": 50 },
-      "metersHero": "Today is a day to explore — energy is steady."
+      "horoscope": {
+        "title": "Wide Signal",
+        "summary": "Your energy expands when you move, explore, or say yes to a fresh angle. Keep it light, but don’t waste the spark."
+      },
+      "meters": { "energy": 82, "connection": 69, "flow": 73 },
+      "metersHero": "Energy is open — follow the spark."
     },
     "Capricorn": {
-      "horoscope": { "title": "TEST TITLE", "summary": "TEST SUMMARY" },
-      "meters": { "energy": 50, "connection": 50, "flow": 50 },
-      "metersHero": "Today is a day to build — energy is steady."
+      "horoscope": {
+        "title": "Quiet Build",
+        "summary": "Progress looks practical today. One focused action beats ten ideas, especially if it creates structure for tomorrow."
+      },
+      "meters": { "energy": 71, "connection": 52, "flow": 78 },
+      "metersHero": "Build steadily — one move matters."
     },
     "Aquarius": {
-      "horoscope": { "title": "Steady Signals", "summary": "Today favors quiet momentum moves over dramatic ones. Trust your instincts - a subtle shift in timing or conversation can open something meaningfull." },
+      "horoscope": {
+        "title": "Steady Signals",
+        "summary": "Today favors quiet momentum over dramatic moves. Trust your instincts — a subtle shift in timing or conversation can open something meaningful."
+      },
       "meters": { "energy": 60, "connection": 90, "flow": 30 },
-      "metersHero": "Connection is high - reach out"
+      "metersHero": "Connection is high — reach out."
     },
     "Pisces": {
-      "horoscope": { "title": "TEST TITLE", "summary": "TEST SUMMARY" },
-      "meters": { "energy": 50, "connection": 50, "flow": 50 },
-      "metersHero": "Today is a day to soften — flow is steady."
+      "horoscope": {
+        "title": "Soft Compass",
+        "summary": "Your imagination is useful today, but only if you give it shape. Let intuition guide the first step, then ground it in action."
+      },
+      "meters": { "energy": 50, "connection": 76, "flow": 72 },
+      "metersHero": "Flow is soft — follow the signal."
+    }
+  },
+  "starSync": {
+    "dailyTheme": "Today’s Star Sync energy favors honest timing, emotional clarity, and natural attraction over forced intensity.",
+    "pairingNote": "Use owner sign as the first sign and other person sign as the second sign.",
+    "pairs": {
+      "Aries": {
+        "Aries": { "friendship": { "score": 82, "sentence": "This friendship feels bold, fast, and energizing today." }, "romance": { "score": 78, "sentence": "Romance sparks quickly when both people leave room for softness." } },
+        "Taurus": { "friendship": { "score": 66, "sentence": "This friendship works when Aries moves slower and Taurus stays open." }, "romance": { "score": 61, "sentence": "Romance builds through patience, physical presence, and clear expectations." } },
+        "Gemini": { "friendship": { "score": 88, "sentence": "Conversation comes easily, making this a playful and high-motion bond." }, "romance": { "score": 84, "sentence": "Romantic chemistry rises through banter, curiosity, and spontaneous plans." } },
+        "Cancer": { "friendship": { "score": 59, "sentence": "This friendship needs emotional patience and gentler timing today." }, "romance": { "score": 55, "sentence": "Romance can work if direct energy does not overwhelm sensitivity." } },
+        "Leo": { "friendship": { "score": 91, "sentence": "This pairing feels magnetic, loyal, and naturally fun today." }, "romance": { "score": 89, "sentence": "Romantic fire is strong when admiration stays mutual." } },
+        "Virgo": { "friendship": { "score": 62, "sentence": "This friendship improves when action and detail meet in the middle." }, "romance": { "score": 57, "sentence": "Romance needs clear communication instead of assuming different rhythms mean distance." } },
+        "Libra": { "friendship": { "score": 79, "sentence": "Opposite energy creates balance, charm, and useful perspective." }, "romance": { "score": 83, "sentence": "Romance feels charged when confidence meets grace." } },
+        "Scorpio": { "friendship": { "score": 64, "sentence": "This friendship has intensity but needs trust before it opens fully." }, "romance": { "score": 76, "sentence": "Romance can feel powerful if neither person turns chemistry into control." } },
+        "Sagittarius": { "friendship": { "score": 92, "sentence": "This friendship feels adventurous, honest, and easy to restart." }, "romance": { "score": 87, "sentence": "Romance thrives through freedom, laughter, and shared movement." } },
+        "Capricorn": { "friendship": { "score": 58, "sentence": "This friendship needs respect for different speeds and priorities." }, "romance": { "score": 54, "sentence": "Romance works best when ambition and impulse stop competing." } },
+        "Aquarius": { "friendship": { "score": 86, "sentence": "This friendship feels electric, independent, and mentally alive." }, "romance": { "score": 80, "sentence": "Romance builds through space, honesty, and unusual chemistry." } },
+        "Pisces": { "friendship": { "score": 67, "sentence": "This friendship works when courage protects softness instead of rushing it." }, "romance": { "score": 69, "sentence": "Romance feels dreamy but needs direct words to stay grounded." } }
+      },
+      "Taurus": {
+        "Aries": { "friendship": { "score": 66, "sentence": "This friendship works when patience meets momentum." }, "romance": { "score": 61, "sentence": "Romance builds slowly when both people respect different speeds." } },
+        "Taurus": { "friendship": { "score": 84, "sentence": "This friendship feels steady, loyal, and easy to trust." }, "romance": { "score": 79, "sentence": "Romance grows through comfort, consistency, and physical warmth." } },
+        "Gemini": { "friendship": { "score": 63, "sentence": "This friendship needs curiosity from Taurus and follow-through from Gemini." }, "romance": { "score": 58, "sentence": "Romance works when playfulness does not disturb the need for security." } },
+        "Cancer": { "friendship": { "score": 90, "sentence": "This friendship feels safe, nourishing, and naturally supportive." }, "romance": { "score": 88, "sentence": "Romance feels warm when affection and loyalty are shown clearly." } },
+        "Leo": { "friendship": { "score": 72, "sentence": "This friendship has warmth but may need flexibility around pride." }, "romance": { "score": 74, "sentence": "Romance strengthens when admiration and reliability meet." } },
+        "Virgo": { "friendship": { "score": 92, "sentence": "This friendship feels practical, grounded, and quietly powerful." }, "romance": { "score": 86, "sentence": "Romance builds through devotion, routine, and trust." } },
+        "Libra": { "friendship": { "score": 76, "sentence": "This friendship enjoys beauty, comfort, and easy social rhythm." }, "romance": { "score": 80, "sentence": "Romance feels graceful when affection stays consistent." } },
+        "Scorpio": { "friendship": { "score": 83, "sentence": "This friendship feels deep, loyal, and protective when trust is earned." }, "romance": { "score": 91, "sentence": "Romance carries strong magnetism and emotional depth today." } },
+        "Sagittarius": { "friendship": { "score": 57, "sentence": "This friendship needs room for adventure without disrupting stability." }, "romance": { "score": 53, "sentence": "Romance may need compromise between freedom and security." } },
+        "Capricorn": { "friendship": { "score": 94, "sentence": "This friendship feels reliable, productive, and deeply stabilizing." }, "romance": { "score": 89, "sentence": "Romance grows through loyalty, planning, and shared standards." } },
+        "Aquarius": { "friendship": { "score": 61, "sentence": "This friendship works when tradition and originality respect each other." }, "romance": { "score": 56, "sentence": "Romance needs patience around emotional and lifestyle differences." } },
+        "Pisces": { "friendship": { "score": 89, "sentence": "This friendship feels gentle, creative, and emotionally safe." }, "romance": { "score": 87, "sentence": "Romance feels tender when dreams are supported by consistency." } }
+      },
+      "Gemini": {
+        "Aries": { "friendship": { "score": 88, "sentence": "This friendship is fast, fun, and full of spark today." }, "romance": { "score": 84, "sentence": "Romance thrives through wit, movement, and playful honesty." } },
+        "Taurus": { "friendship": { "score": 63, "sentence": "This friendship improves when curiosity slows down enough to land." }, "romance": { "score": 58, "sentence": "Romance needs steadiness from Gemini and flexibility from Taurus." } },
+        "Gemini": { "friendship": { "score": 85, "sentence": "This friendship feels mentally alive and endlessly conversational." }, "romance": { "score": 77, "sentence": "Romance is playful, but consistency keeps it from scattering." } },
+        "Cancer": { "friendship": { "score": 68, "sentence": "This friendship needs emotional clarity beneath the conversation." }, "romance": { "score": 64, "sentence": "Romance grows when cleverness makes room for tenderness." } },
+        "Leo": { "friendship": { "score": 90, "sentence": "This friendship feels social, bright, and easy to enjoy." }, "romance": { "score": 86, "sentence": "Romance feels charming when attention and play stay balanced." } },
+        "Virgo": { "friendship": { "score": 74, "sentence": "This friendship works through shared intelligence and different methods." }, "romance": { "score": 70, "sentence": "Romance improves when analysis does not replace affection." } },
+        "Libra": { "friendship": { "score": 93, "sentence": "This friendship feels graceful, witty, and socially effortless." }, "romance": { "score": 88, "sentence": "Romance is high when charm and communication stay honest." } },
+        "Scorpio": { "friendship": { "score": 60, "sentence": "This friendship needs trust before depth and humor can blend." }, "romance": { "score": 66, "sentence": "Romance can be intense if curiosity respects emotional boundaries." } },
+        "Sagittarius": { "friendship": { "score": 91, "sentence": "This friendship feels adventurous, hilarious, and mentally expansive." }, "romance": { "score": 85, "sentence": "Romance thrives when freedom and truth stay playful." } },
+        "Capricorn": { "friendship": { "score": 59, "sentence": "This friendship needs structure without losing lightness." }, "romance": { "score": 55, "sentence": "Romance works when responsibility and spontaneity stop competing." } },
+        "Aquarius": { "friendship": { "score": 94, "sentence": "This friendship feels electric, strange, and mentally synced." }, "romance": { "score": 87, "sentence": "Romance grows through originality, space, and shared curiosity." } },
+        "Pisces": { "friendship": { "score": 70, "sentence": "This friendship blends imagination and conversation when both stay clear." }, "romance": { "score": 68, "sentence": "Romance needs grounding so fantasy does not become confusion." } }
+      },
+      "Cancer": {
+        "Aries": { "friendship": { "score": 59, "sentence": "This friendship needs gentler timing and emotional patience." }, "romance": { "score": 55, "sentence": "Romance works best when directness is softened with care." } },
+        "Taurus": { "friendship": { "score": 90, "sentence": "This friendship feels warm, safe, and naturally loyal." }, "romance": { "score": 88, "sentence": "Romance is strong when affection feels consistent and real." } },
+        "Gemini": { "friendship": { "score": 68, "sentence": "This friendship works when feelings and words stay connected." }, "romance": { "score": 64, "sentence": "Romance grows when curiosity becomes emotional presence." } },
+        "Cancer": { "friendship": { "score": 87, "sentence": "This friendship feels protective, intuitive, and emotionally familiar." }, "romance": { "score": 82, "sentence": "Romance feels tender when both people avoid silent assumptions." } },
+        "Leo": { "friendship": { "score": 75, "sentence": "This friendship blends warmth and loyalty when pride stays soft." }, "romance": { "score": 78, "sentence": "Romance glows when attention feels safe instead of demanding." } },
+        "Virgo": { "friendship": { "score": 89, "sentence": "This friendship feels caring, useful, and quietly dependable." }, "romance": { "score": 84, "sentence": "Romance strengthens through small acts of care and trust." } },
+        "Libra": { "friendship": { "score": 71, "sentence": "This friendship needs emotional honesty beneath the peacekeeping." }, "romance": { "score": 73, "sentence": "Romance feels sweet when harmony does not avoid vulnerability." } },
+        "Scorpio": { "friendship": { "score": 94, "sentence": "This friendship feels deep, loyal, and instinctively protective." }, "romance": { "score": 92, "sentence": "Romance carries powerful emotional magnetism today." } },
+        "Sagittarius": { "friendship": { "score": 58, "sentence": "This friendship needs freedom without emotional disappearance." }, "romance": { "score": 54, "sentence": "Romance requires reassurance and respect for different needs." } },
+        "Capricorn": { "friendship": { "score": 82, "sentence": "This friendship balances care with structure in a useful way." }, "romance": { "score": 86, "sentence": "Romance grows when emotional warmth meets practical commitment." } },
+        "Aquarius": { "friendship": { "score": 62, "sentence": "This friendship works when logic makes room for feeling." }, "romance": { "score": 57, "sentence": "Romance needs emotional translation instead of distance." } },
+        "Pisces": { "friendship": { "score": 93, "sentence": "This friendship feels intuitive, soft, and spiritually easy." }, "romance": { "score": 91, "sentence": "Romance feels dreamy, compassionate, and deeply understood." } }
+      },
+      "Leo": {
+        "Aries": { "friendship": { "score": 91, "sentence": "This friendship feels bold, loyal, and full of momentum." }, "romance": { "score": 89, "sentence": "Romance burns bright when admiration stays mutual." } },
+        "Taurus": { "friendship": { "score": 72, "sentence": "This friendship works when warmth meets patience." }, "romance": { "score": 74, "sentence": "Romance grows when consistency supports passion." } },
+        "Gemini": { "friendship": { "score": 90, "sentence": "This friendship feels bright, funny, and socially magnetic." }, "romance": { "score": 86, "sentence": "Romance thrives through attention, laughter, and curiosity." } },
+        "Cancer": { "friendship": { "score": 75, "sentence": "This friendship becomes strong when loyalty feels emotionally safe." }, "romance": { "score": 78, "sentence": "Romance glows when affection is both proud and gentle." } },
+        "Leo": { "friendship": { "score": 86, "sentence": "This friendship feels radiant, generous, and dramatic in a fun way." }, "romance": { "score": 82, "sentence": "Romance shines when both people share the spotlight." } },
+        "Virgo": { "friendship": { "score": 65, "sentence": "This friendship needs appreciation for different ways of showing care." }, "romance": { "score": 62, "sentence": "Romance works when praise and practical support meet." } },
+        "Libra": { "friendship": { "score": 92, "sentence": "This friendship feels stylish, warm, and socially effortless." }, "romance": { "score": 90, "sentence": "Romance is highly magnetic when charm meets confidence." } },
+        "Scorpio": { "friendship": { "score": 70, "sentence": "This friendship has power but needs trust around pride and control." }, "romance": { "score": 81, "sentence": "Romance feels intense, magnetic, and impossible to ignore." } },
+        "Sagittarius": { "friendship": { "score": 94, "sentence": "This friendship feels adventurous, joyful, and naturally encouraging." }, "romance": { "score": 88, "sentence": "Romance thrives through freedom, laughter, and shared fire." } },
+        "Capricorn": { "friendship": { "score": 63, "sentence": "This friendship needs respect between performance and discipline." }, "romance": { "score": 60, "sentence": "Romance works when ambition does not cool affection." } },
+        "Aquarius": { "friendship": { "score": 78, "sentence": "This friendship blends spotlight and originality in a fascinating way." }, "romance": { "score": 83, "sentence": "Romance feels electric when individuality is celebrated." } },
+        "Pisces": { "friendship": { "score": 73, "sentence": "This friendship works when warmth protects sensitivity." }, "romance": { "score": 76, "sentence": "Romance feels creative, tender, and theatrical in the best way." } }
+      },
+      "Virgo": {
+        "Aries": { "friendship": { "score": 62, "sentence": "This friendship works when speed respects detail." }, "romance": { "score": 57, "sentence": "Romance needs patience between impulse and analysis." } },
+        "Taurus": { "friendship": { "score": 92, "sentence": "This friendship feels grounded, useful, and deeply reliable." }, "romance": { "score": 86, "sentence": "Romance grows through trust, routine, and quiet devotion." } },
+        "Gemini": { "friendship": { "score": 74, "sentence": "This friendship works through shared intelligence and different rhythms." }, "romance": { "score": 70, "sentence": "Romance improves when words become consistent action." } },
+        "Cancer": { "friendship": { "score": 89, "sentence": "This friendship feels caring, practical, and emotionally supportive." }, "romance": { "score": 84, "sentence": "Romance builds through little acts that prove safety." } },
+        "Leo": { "friendship": { "score": 65, "sentence": "This friendship needs mutual appreciation for different strengths." }, "romance": { "score": 62, "sentence": "Romance works when affection and usefulness both matter." } },
+        "Virgo": { "friendship": { "score": 84, "sentence": "This friendship feels thoughtful, precise, and quietly dependable." }, "romance": { "score": 78, "sentence": "Romance grows when perfection softens into presence." } },
+        "Libra": { "friendship": { "score": 72, "sentence": "This friendship blends taste and detail when criticism stays gentle." }, "romance": { "score": 75, "sentence": "Romance feels balanced when beauty and effort both show up." } },
+        "Scorpio": { "friendship": { "score": 88, "sentence": "This friendship feels focused, loyal, and emotionally perceptive." }, "romance": { "score": 86, "sentence": "Romance deepens through trust, honesty, and quiet intensity." } },
+        "Sagittarius": { "friendship": { "score": 60, "sentence": "This friendship needs flexibility between planning and exploration." }, "romance": { "score": 56, "sentence": "Romance works when freedom respects practical needs." } },
+        "Capricorn": { "friendship": { "score": 95, "sentence": "This friendship feels productive, reliable, and aligned on standards." }, "romance": { "score": 88, "sentence": "Romance grows through shared goals and steady commitment." } },
+        "Aquarius": { "friendship": { "score": 67, "sentence": "This friendship works when systems and originality collaborate." }, "romance": { "score": 61, "sentence": "Romance needs warmth beneath all the thinking." } },
+        "Pisces": { "friendship": { "score": 80, "sentence": "This friendship balances imagination with grounding." }, "romance": { "score": 83, "sentence": "Romance feels healing when dreams meet devotion." } }
+      },
+      "Libra": {
+        "Aries": { "friendship": { "score": 79, "sentence": "This friendship creates balance through contrast and momentum." }, "romance": { "score": 83, "sentence": "Romance is charged when boldness meets grace." } },
+        "Taurus": { "friendship": { "score": 76, "sentence": "This friendship enjoys beauty, comfort, and social ease." }, "romance": { "score": 80, "sentence": "Romance feels sensual, graceful, and steady today." } },
+        "Gemini": { "friendship": { "score": 93, "sentence": "This friendship feels witty, elegant, and socially effortless." }, "romance": { "score": 88, "sentence": "Romance thrives through charm, conversation, and lightness." } },
+        "Cancer": { "friendship": { "score": 71, "sentence": "This friendship needs honesty beneath the desire for peace." }, "romance": { "score": 73, "sentence": "Romance works when harmony includes emotional truth." } },
+        "Leo": { "friendship": { "score": 92, "sentence": "This friendship feels warm, stylish, and naturally magnetic." }, "romance": { "score": 90, "sentence": "Romance shines when admiration and elegance meet." } },
+        "Virgo": { "friendship": { "score": 72, "sentence": "This friendship works when detail supports beauty instead of judging it." }, "romance": { "score": 75, "sentence": "Romance improves when effort feels graceful, not pressured." } },
+        "Libra": { "friendship": { "score": 86, "sentence": "This friendship feels balanced, social, and aesthetically aligned." }, "romance": { "score": 82, "sentence": "Romance feels graceful when both people stop avoiding decisions." } },
+        "Scorpio": { "friendship": { "score": 69, "sentence": "This friendship needs depth without disrupting peace." }, "romance": { "score": 79, "sentence": "Romance feels magnetic when charm meets emotional intensity." } },
+        "Sagittarius": { "friendship": { "score": 89, "sentence": "This friendship feels playful, social, and open-minded." }, "romance": { "score": 84, "sentence": "Romance thrives through freedom, humor, and shared experiences." } },
+        "Capricorn": { "friendship": { "score": 64, "sentence": "This friendship needs balance between beauty and responsibility." }, "romance": { "score": 66, "sentence": "Romance works when structure does not dim sweetness." } },
+        "Aquarius": { "friendship": { "score": 91, "sentence": "This friendship feels intelligent, open, and effortlessly interesting." }, "romance": { "score": 87, "sentence": "Romance grows through mental chemistry and independence." } },
+        "Pisces": { "friendship": { "score": 78, "sentence": "This friendship feels artistic, gentle, and emotionally graceful." }, "romance": { "score": 81, "sentence": "Romance feels dreamy when boundaries stay kind and clear." } }
+      },
+      "Scorpio": {
+        "Aries": { "friendship": { "score": 64, "sentence": "This friendship has intensity, but trust must lead." }, "romance": { "score": 76, "sentence": "Romance feels powerful when chemistry does not become control." } },
+        "Taurus": { "friendship": { "score": 83, "sentence": "This friendship feels loyal, grounded, and deeply protective." }, "romance": { "score": 91, "sentence": "Romance carries strong magnetism and emotional pull." } },
+        "Gemini": { "friendship": { "score": 60, "sentence": "This friendship needs truth beneath the cleverness." }, "romance": { "score": 66, "sentence": "Romance works when curiosity respects emotional depth." } },
+        "Cancer": { "friendship": { "score": 94, "sentence": "This friendship feels instinctive, loyal, and emotionally powerful." }, "romance": { "score": 92, "sentence": "Romance feels deeply magnetic and emotionally understood." } },
+        "Leo": { "friendship": { "score": 70, "sentence": "This friendship needs trust around pride and intensity." }, "romance": { "score": 81, "sentence": "Romance feels dramatic, magnetic, and hard to ignore." } },
+        "Virgo": { "friendship": { "score": 88, "sentence": "This friendship feels focused, loyal, and perceptive." }, "romance": { "score": 86, "sentence": "Romance deepens through honesty and quiet devotion." } },
+        "Libra": { "friendship": { "score": 69, "sentence": "This friendship needs honesty beneath charm." }, "romance": { "score": 79, "sentence": "Romance feels magnetic when sweetness meets depth." } },
+        "Scorpio": { "friendship": { "score": 84, "sentence": "This friendship feels intense, loyal, and private." }, "romance": { "score": 88, "sentence": "Romance is powerful when both people choose trust over testing." } },
+        "Sagittarius": { "friendship": { "score": 62, "sentence": "This friendship needs freedom without emotional avoidance." }, "romance": { "score": 58, "sentence": "Romance works when truth does not become bluntness." } },
+        "Capricorn": { "friendship": { "score": 91, "sentence": "This friendship feels strategic, loyal, and deeply capable." }, "romance": { "score": 89, "sentence": "Romance grows through trust, ambition, and long-term devotion." } },
+        "Aquarius": { "friendship": { "score": 65, "sentence": "This friendship needs space without emotional shutdown." }, "romance": { "score": 60, "sentence": "Romance requires translation between depth and distance." } },
+        "Pisces": { "friendship": { "score": 96, "sentence": "This friendship feels intuitive, spiritual, and deeply safe." }, "romance": { "score": 94, "sentence": "Romance feels soulful, magnetic, and emotionally absorbing." } }
+      },
+      "Sagittarius": {
+        "Aries": { "friendship": { "score": 92, "sentence": "This friendship feels adventurous, direct, and full of life." }, "romance": { "score": 87, "sentence": "Romance thrives through freedom, laughter, and shared motion." } },
+        "Taurus": { "friendship": { "score": 57, "sentence": "This friendship needs patience between adventure and stability." }, "romance": { "score": 53, "sentence": "Romance works only when freedom respects security." } },
+        "Gemini": { "friendship": { "score": 91, "sentence": "This friendship feels funny, expansive, and mentally alive." }, "romance": { "score": 85, "sentence": "Romance grows through truth, movement, and curiosity." } },
+        "Cancer": { "friendship": { "score": 58, "sentence": "This friendship needs freedom without emotional disappearance." }, "romance": { "score": 54, "sentence": "Romance requires reassurance and gentler honesty." } },
+        "Leo": { "friendship": { "score": 94, "sentence": "This friendship feels joyful, bold, and naturally encouraging." }, "romance": { "score": 88, "sentence": "Romance thrives through shared fire and adventure." } },
+        "Virgo": { "friendship": { "score": 60, "sentence": "This friendship needs flexibility between planning and wandering." }, "romance": { "score": 56, "sentence": "Romance works when freedom respects practical care." } },
+        "Libra": { "friendship": { "score": 89, "sentence": "This friendship feels social, playful, and open-minded." }, "romance": { "score": 84, "sentence": "Romance grows through humor, ease, and shared experience." } },
+        "Scorpio": { "friendship": { "score": 62, "sentence": "This friendship needs depth without feeling trapped." }, "romance": { "score": 58, "sentence": "Romance works when honesty stays kind." } },
+        "Sagittarius": { "friendship": { "score": 87, "sentence": "This friendship feels free, funny, and constantly renewing." }, "romance": { "score": 80, "sentence": "Romance thrives when both people choose adventure and honesty." } },
+        "Capricorn": { "friendship": { "score": 66, "sentence": "This friendship works when vision and discipline cooperate." }, "romance": { "score": 61, "sentence": "Romance needs shared goals so freedom does not feel careless." } },
+        "Aquarius": { "friendship": { "score": 93, "sentence": "This friendship feels original, free, and future-minded." }, "romance": { "score": 86, "sentence": "Romance grows through independence and unusual chemistry." } },
+        "Pisces": { "friendship": { "score": 75, "sentence": "This friendship blends imagination and exploration." }, "romance": { "score": 72, "sentence": "Romance feels dreamy when truth stays gentle." } }
+      },
+      "Capricorn": {
+        "Aries": { "friendship": { "score": 58, "sentence": "This friendship needs patience between discipline and impulse." }, "romance": { "score": 54, "sentence": "Romance works when ambition does not fight spontaneity." } },
+        "Taurus": { "friendship": { "score": 94, "sentence": "This friendship feels grounded, dependable, and productive." }, "romance": { "score": 89, "sentence": "Romance grows through loyalty, structure, and long-term trust." } },
+        "Gemini": { "friendship": { "score": 59, "sentence": "This friendship needs structure without losing lightness." }, "romance": { "score": 55, "sentence": "Romance works when communication becomes consistent action." } },
+        "Cancer": { "friendship": { "score": 82, "sentence": "This friendship balances care and structure well." }, "romance": { "score": 86, "sentence": "Romance grows through emotional warmth and practical commitment." } },
+        "Leo": { "friendship": { "score": 63, "sentence": "This friendship needs respect between ambition and expression." }, "romance": { "score": 60, "sentence": "Romance works when devotion does not feel cold." } },
+        "Virgo": { "friendship": { "score": 95, "sentence": "This friendship feels aligned, productive, and reliable." }, "romance": { "score": 88, "sentence": "Romance grows through shared goals and steady effort." } },
+        "Libra": { "friendship": { "score": 64, "sentence": "This friendship needs balance between responsibility and ease." }, "romance": { "score": 66, "sentence": "Romance works when structure protects sweetness." } },
+        "Scorpio": { "friendship": { "score": 91, "sentence": "This friendship feels strategic, loyal, and deeply capable." }, "romance": { "score": 89, "sentence": "Romance deepens through trust, ambition, and devotion." } },
+        "Sagittarius": { "friendship": { "score": 66, "sentence": "This friendship works when vision meets discipline." }, "romance": { "score": 61, "sentence": "Romance needs clear goals and room for freedom." } },
+        "Capricorn": { "friendship": { "score": 86, "sentence": "This friendship feels focused, disciplined, and dependable." }, "romance": { "score": 80, "sentence": "Romance grows when ambition makes space for tenderness." } },
+        "Aquarius": { "friendship": { "score": 73, "sentence": "This friendship works when systems and innovation align." }, "romance": { "score": 67, "sentence": "Romance needs warmth beneath future-focused thinking." } },
+        "Pisces": { "friendship": { "score": 84, "sentence": "This friendship balances dreams with structure." }, "romance": { "score": 87, "sentence": "Romance feels supportive when imagination has a safe container." } }
+      },
+      "Aquarius": {
+        "Aries": { "friendship": { "score": 86, "sentence": "This friendship feels electric, independent, and energizing." }, "romance": { "score": 80, "sentence": "Romance grows through space, honesty, and unusual chemistry." } },
+        "Taurus": { "friendship": { "score": 61, "sentence": "This friendship works when tradition and originality respect each other." }, "romance": { "score": 56, "sentence": "Romance needs patience between stability and independence." } },
+        "Gemini": { "friendship": { "score": 94, "sentence": "This friendship feels brilliant, strange, and mentally synced." }, "romance": { "score": 87, "sentence": "Romance thrives through curiosity and freedom." } },
+        "Cancer": { "friendship": { "score": 62, "sentence": "This friendship needs logic to make room for feeling." }, "romance": { "score": 57, "sentence": "Romance requires emotional translation instead of distance." } },
+        "Leo": { "friendship": { "score": 78, "sentence": "This friendship blends originality with visible warmth." }, "romance": { "score": 83, "sentence": "Romance feels electric when individuality is celebrated." } },
+        "Virgo": { "friendship": { "score": 67, "sentence": "This friendship works when systems support innovation." }, "romance": { "score": 61, "sentence": "Romance needs warmth beneath all the thinking." } },
+        "Libra": { "friendship": { "score": 91, "sentence": "This friendship feels intelligent, social, and effortlessly interesting." }, "romance": { "score": 87, "sentence": "Romance grows through mental chemistry and independence." } },
+        "Scorpio": { "friendship": { "score": 65, "sentence": "This friendship needs space without emotional shutdown." }, "romance": { "score": 60, "sentence": "Romance requires translation between depth and distance." } },
+        "Sagittarius": { "friendship": { "score": 93, "sentence": "This friendship feels free, future-minded, and original." }, "romance": { "score": 86, "sentence": "Romance thrives through independence and shared possibility." } },
+        "Capricorn": { "friendship": { "score": 73, "sentence": "This friendship works when innovation respects structure." }, "romance": { "score": 67, "sentence": "Romance needs emotional warmth behind the vision." } },
+        "Aquarius": { "friendship": { "score": 88, "sentence": "This friendship feels rare, electric, and mentally open." }, "romance": { "score": 82, "sentence": "Romance thrives when freedom becomes trust." } },
+        "Pisces": { "friendship": { "score": 76, "sentence": "This friendship blends imagination with future vision." }, "romance": { "score": 74, "sentence": "Romance feels unusual, dreamy, and quietly magnetic." } }
+      },
+      "Pisces": {
+        "Aries": { "friendship": { "score": 67, "sentence": "This friendship works when courage protects softness." }, "romance": { "score": 69, "sentence": "Romance feels dreamy but needs direct words." } },
+        "Taurus": { "friendship": { "score": 89, "sentence": "This friendship feels gentle, creative, and emotionally safe." }, "romance": { "score": 87, "sentence": "Romance is tender when dreams are supported by consistency." } },
+        "Gemini": { "friendship": { "score": 70, "sentence": "This friendship blends imagination with conversation." }, "romance": { "score": 68, "sentence": "Romance needs grounding so fantasy does not become confusion." } },
+        "Cancer": { "friendship": { "score": 93, "sentence": "This friendship feels intuitive, soft, and spiritually easy." }, "romance": { "score": 91, "sentence": "Romance feels compassionate, dreamy, and deeply understood." } },
+        "Leo": { "friendship": { "score": 73, "sentence": "This friendship works when warmth protects sensitivity." }, "romance": { "score": 76, "sentence": "Romance feels creative, tender, and expressive." } },
+        "Virgo": { "friendship": { "score": 80, "sentence": "This friendship balances imagination with grounding." }, "romance": { "score": 83, "sentence": "Romance feels healing when dreams meet devotion." } },
+        "Libra": { "friendship": { "score": 78, "sentence": "This friendship feels artistic, gentle, and graceful." }, "romance": { "score": 81, "sentence": "Romance feels dreamy when boundaries stay kind and clear." } },
+        "Scorpio": { "friendship": { "score": 96, "sentence": "This friendship feels intuitive, spiritual, and deeply safe." }, "romance": { "score": 94, "sentence": "Romance feels soulful, magnetic, and emotionally absorbing." } },
+        "Sagittarius": { "friendship": { "score": 75, "sentence": "This friendship blends imagination and exploration." }, "romance": { "score": 72, "sentence": "Romance works when truth stays gentle." } },
+        "Capricorn": { "friendship": { "score": 84, "sentence": "This friendship balances dreams with structure." }, "romance": { "score": 87, "sentence": "Romance feels supportive when imagination has a safe container." } },
+        "Aquarius": { "friendship": { "score": 76, "sentence": "This friendship blends future vision with imagination." }, "romance": { "score": 74, "sentence": "Romance feels unusual, dreamy, and quietly magnetic." } },
+        "Pisces": { "friendship": { "score": 88, "sentence": "This friendship feels soft, intuitive, and emotionally fluent." }, "romance": { "score": 84, "sentence": "Romance feels dreamy, compassionate, and deeply familiar." } }
+      }
     }
   }
 }
