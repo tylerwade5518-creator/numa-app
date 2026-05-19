@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { supabase } from "../../lib/supabase/client";
 import AnimatedSpaceBackground from "../dashboard/AnimatedSpaceBackground";
 
 const ZODIAC_SIGNS = [
@@ -24,8 +25,10 @@ type ZodiacSign = (typeof ZODIAC_SIGNS)[number];
 type ConnectionCategory = "friendship" | "romantic" | "business";
 type Lens = "strengths" | "challenges";
 
+const LAST_BAND_STORAGE_KEY = "numa:lastBandId";
+
 interface CompatibilityResult {
-  overall: number; // 0-100
+  overall: number;
   friendship: number;
   romantic: number;
   business: number;
@@ -35,21 +38,13 @@ interface CompatibilityResult {
   challenges: Record<ConnectionCategory, string[]>;
 }
 
-/**
- * Simple placeholder logic.
- * - Produces stable-feeling scores and text using sign indices + distance.
- * - Replace later with real synastry engine.
- */
 function getCompatibility(owner: ZodiacSign, other: ZodiacSign): CompatibilityResult {
   const a = ZODIAC_SIGNS.indexOf(owner);
   const b = ZODIAC_SIGNS.indexOf(other);
   const diff = Math.abs(a - b);
-  const normalized = 1 - diff / (ZODIAC_SIGNS.length - 1); // 0..1 (closer signs -> higher)
+  const normalized = 1 - diff / (ZODIAC_SIGNS.length - 1);
 
-  // overall: keep it chunky and optimistic but not always 90+
   const overall = clampInt(Math.round(48 + normalized * 44 + ((a + b) % 7) - 3), 25, 95);
-
-  // Category shaping: a little variance so categories feel distinct
   const friendship = clampInt(Math.round(overall + ((a * 3 + b) % 9) - 4), 20, 98);
   const romantic = clampInt(Math.round(overall + ((a + b * 2) % 11) - 6), 18, 98);
   const business = clampInt(Math.round(overall + ((a * 2 + b * 3) % 10) - 5), 18, 98);
@@ -82,121 +77,53 @@ function getCompatibility(owner: ZodiacSign, other: ZodiacSign): CompatibilityRe
         : "Business works best with structure. Clear expectations and boundaries turn friction into productivity.",
   };
 
-  // Strengths + challenges: we’ll tailor these a bit by category + diff bucket
-  const bucket =
-    diff <= 2 ? "close" : diff <= 5 ? "mid" : "far";
+  const bucket = diff <= 2 ? "close" : diff <= 5 ? "mid" : "far";
 
   const strengths: Record<ConnectionCategory, string[]> = {
     friendship:
       bucket === "close"
-        ? [
-            "You share a similar pace, so plans are easy and low-stress.",
-            "You recharge each other instead of draining each other.",
-          ]
+        ? ["You share a similar pace, so plans are easy and low-stress.", "You recharge each other instead of draining each other."]
         : bucket === "mid"
-        ? [
-            "Different perspectives make conversations fun and surprising.",
-            "You balance each other—one brings spark, the other brings steadiness.",
-          ]
-        : [
-            "You can teach each other a lot without competing.",
-            "When you align on values, the bond becomes unusually loyal.",
-          ],
+        ? ["Different perspectives make conversations fun and surprising.", "You balance each other—one brings spark, the other brings steadiness."]
+        : ["You can teach each other a lot without competing.", "When you align on values, the bond becomes unusually loyal."],
     romantic:
       bucket === "close"
-        ? [
-            "Strong emotional fluency—less guessing, more clarity.",
-            "Physical/mental attraction tends to stay consistent over time.",
-          ]
+        ? ["Strong emotional fluency—less guessing, more clarity.", "Physical/mental attraction tends to stay consistent over time."]
         : bucket === "mid"
-        ? [
-            "Chemistry grows through contrast—mystery keeps it exciting.",
-            "You bring out confidence in each other when you stay honest.",
-          ]
-        : [
-            "The connection can feel ‘fated’ when you commit to understanding.",
-            "You challenge each other to grow beyond comfort zones.",
-          ],
+        ? ["Chemistry grows through contrast—mystery keeps it exciting.", "You bring out confidence in each other when you stay honest."]
+        : ["The connection can feel ‘fated’ when you commit to understanding.", "You challenge each other to grow beyond comfort zones."],
     business:
       bucket === "close"
-        ? [
-            "Aligned priorities make planning and execution smooth.",
-            "You’ll naturally agree on standards and quality.",
-          ]
+        ? ["Aligned priorities make planning and execution smooth.", "You’ll naturally agree on standards and quality."]
         : bucket === "mid"
-        ? [
-            "Great division of labor—one leads strategy, one handles details.",
-            "Problem-solving improves because you don’t think the same way.",
-          ]
-        : [
-            "High upside when roles are defined—big vision + strong accountability.",
-            "You can create systems that last because you pressure-test decisions.",
-          ],
+        ? ["Great division of labor—one leads strategy, one handles details.", "Problem-solving improves because you don’t think the same way."]
+        : ["High upside when roles are defined—big vision + strong accountability.", "You can create systems that last because you pressure-test decisions."],
   };
 
   const challenges: Record<ConnectionCategory, string[]> = {
     friendship:
       bucket === "close"
-        ? [
-            "You might avoid hard conversations because things feel ‘fine’—say the small stuff early.",
-            "Routines can get repetitive unless you intentionally add variety.",
-          ]
+        ? ["You might avoid hard conversations because things feel ‘fine’—say the small stuff early.", "Routines can get repetitive unless you intentionally add variety."]
         : bucket === "mid"
-        ? [
-            "One of you may feel unheard if decisions happen too fast—slow down when it matters.",
-            "Different social styles can cause misreads (quiet ≠ upset, loud ≠ aggressive).",
-          ]
-        : [
-            "Values can clash under stress—keep respect front and center.",
-            "Consistency matters: if one disappears, the bond weakens quickly.",
-          ],
+        ? ["One of you may feel unheard if decisions happen too fast—slow down when it matters.", "Different social styles can cause misreads (quiet ≠ upset, loud ≠ aggressive)."]
+        : ["Values can clash under stress—keep respect front and center.", "Consistency matters: if one disappears, the bond weakens quickly."],
     romantic:
       bucket === "close"
-        ? [
-            "Comfort can turn into complacency—keep flirting with curiosity, not just routine.",
-            "If both avoid conflict, issues can stack up quietly.",
-          ]
+        ? ["Comfort can turn into complacency—keep flirting with curiosity, not just routine.", "If both avoid conflict, issues can stack up quietly."]
         : bucket === "mid"
-        ? [
-            "Miscommunication can happen when expectations aren’t spoken—be explicit about needs.",
-            "Intensity can spike then cool—pace yourselves and keep trust steady.",
-          ]
-        : [
-            "Different emotional languages can feel like distance—translate, don’t assume.",
-            "Power struggles can show up—choose ‘team’ over winning.",
-          ],
+        ? ["Miscommunication can happen when expectations aren’t spoken—be explicit about needs.", "Intensity can spike then cool—pace yourselves and keep trust steady."]
+        : ["Different emotional languages can feel like distance—translate, don’t assume.", "Power struggles can show up—choose ‘team’ over winning."],
     business:
       bucket === "close"
-        ? [
-            "You may mirror each other’s blind spots—invite outside feedback.",
-            "If you agree too easily, big risks can be missed.",
-          ]
+        ? ["You may mirror each other’s blind spots—invite outside feedback.", "If you agree too easily, big risks can be missed."]
         : bucket === "mid"
-        ? [
-            "Different decision styles can frustrate—set a process for final calls.",
-            "Speed vs perfection can clash—define what ‘done’ means early.",
-          ]
-        : [
-            "Control issues can appear—roles, ownership, and boundaries must be written down.",
-            "If communication gets sparse, trust drops—schedule consistent check-ins.",
-          ],
+        ? ["Different decision styles can frustrate—set a process for final calls.", "Speed vs perfection can clash—define what ‘done’ means early."]
+        : ["Control issues can appear—roles, ownership, and boundaries must be written down.", "If communication gets sparse, trust drops—schedule consistent check-ins."],
   };
 
-  return {
-    overall,
-    friendship,
-    romantic,
-    business,
-    overallSummary,
-    categorySummary,
-    strengths,
-    challenges,
-  };
+  return { overall, friendship, romantic, business, overallSummary, categorySummary, strengths, challenges };
 }
 
-/**
- * Basic Western tropical zodiac from date.
- */
 function getSignFromDate(dateStr: string | null): ZodiacSign | null {
   if (!dateStr) return null;
   const date = new Date(dateStr);
@@ -223,15 +150,7 @@ function clampInt(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
 }
 
-function BigMeter({
-  label,
-  value,
-  tone = "gold",
-}: {
-  label: string;
-  value: number;
-  tone?: "gold" | "sky";
-}) {
+function BigMeter({ label, value, tone = "gold" }: { label: string; value: number; tone?: "gold" | "sky" }) {
   const clamped = clampInt(value, 0, 100);
 
   const barClass =
@@ -239,22 +158,14 @@ function BigMeter({
       ? "bg-gradient-to-r from-yellow-400/95 via-amber-300/95 to-yellow-200/95 shadow-[0_0_26px_rgba(250,204,21,0.55)]"
       : "bg-gradient-to-r from-sky-300 via-cyan-300 to-emerald-300 shadow-[0_0_22px_rgba(56,189,248,0.55)]";
 
-  const borderClass =
-    tone === "gold" ? "border-yellow-200/55" : "border-sky-200/55";
+  const borderClass = tone === "gold" ? "border-yellow-200/55" : "border-sky-200/55";
 
   return (
     <div className="space-y-2">
       <div className="flex items-end justify-between gap-2">
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.22em] text-slate-300">
-            {label}
-          </p>
-        </div>
-        <div className="text-right">
-          <p className="text-2xl font-semibold text-slate-50">{clamped}%</p>
-        </div>
+        <p className="text-[11px] uppercase tracking-[0.22em] text-slate-300">{label}</p>
+        <p className="text-2xl font-semibold text-slate-50">{clamped}%</p>
       </div>
-
       <div className={`h-5 overflow-hidden rounded-full border ${borderClass} bg-slate-950/80`}>
         <div className={`h-full rounded-full ${barClass}`} style={{ width: `${clamped}%` }} />
       </div>
@@ -262,15 +173,7 @@ function BigMeter({
   );
 }
 
-function Segmented({
-  value,
-  onChange,
-  options,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  options: Array<{ id: string; label: string }>;
-}) {
+function Segmented({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: Array<{ id: string; label: string }> }) {
   return (
     <div className="grid grid-cols-3 gap-2">
       {options.map((opt) => {
@@ -297,11 +200,59 @@ function Segmented({
 
 export default function StarSyncPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  // TODO: pull from logged-in band owner profile
   const ownerSign: ZodiacSign = "Aquarius";
 
-  // Keep your existing “select sign / birthday” input for now (quick test flow)
+  const [bandId, setBandId] = useState("");
+  const [armStatus, setArmStatus] = useState<"idle" | "arming" | "armed" | "error">("idle");
+  const [armError, setArmError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const bandFromUrl = searchParams.get("band") || "";
+    const stored =
+      typeof window !== "undefined"
+        ? localStorage.getItem(LAST_BAND_STORAGE_KEY) || ""
+        : "";
+
+    const resolved = (bandFromUrl || stored || "").trim();
+    setBandId(resolved);
+
+    if (resolved && typeof window !== "undefined") {
+      localStorage.setItem(LAST_BAND_STORAGE_KEY, resolved);
+    }
+  }, [searchParams]);
+
+  const handleArmStarSync = async () => {
+    if (!bandId) {
+      setArmStatus("error");
+      setArmError("Missing band id. Open your dashboard from a band tap first.");
+      return;
+    }
+
+    setArmStatus("arming");
+    setArmError(null);
+
+    const { error } = await supabase.from("band_state").upsert(
+      {
+        band_id: bandId,
+        starsync_armed: true,
+        starsync_armed_at: new Date().toISOString(),
+        starsync_used_at: null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "band_id" }
+    );
+
+    if (error) {
+      setArmStatus("error");
+      setArmError(error.message || "Could not arm Star Sync.");
+      return;
+    }
+
+    setArmStatus("armed");
+  };
+
   const [mode, setMode] = useState<"sign" | "birthday">("sign");
   const [otherSign, setOtherSign] = useState<ZodiacSign | "">("");
   const [birthday, setBirthday] = useState("");
@@ -316,7 +267,6 @@ export default function StarSyncPage() {
     return getCompatibility(ownerSign, effectiveOtherSign);
   }, [ownerSign, effectiveOtherSign]);
 
-  // New UI state for your requested flow
   const [category, setCategory] = useState<ConnectionCategory>("friendship");
   const [lens, setLens] = useState<Lens>("strengths");
 
@@ -345,7 +295,6 @@ export default function StarSyncPage() {
       <AnimatedSpaceBackground />
 
       <main className="relative z-10 mx-auto flex min-h-screen max-w-3xl flex-col gap-5 px-4 py-6 sm:py-8">
-        {/* Header */}
         <section className="flex items-center justify-between gap-3">
           <button
             type="button"
@@ -354,6 +303,7 @@ export default function StarSyncPage() {
           >
             ← Back
           </button>
+
           <div className="flex-1 text-center sm:text-left">
             <p className="text-[11px] uppercase tracking-[0.25em] text-slate-300">
               Star Sync
@@ -362,10 +312,63 @@ export default function StarSyncPage() {
               Compare your alignment with someone else.
             </p>
           </div>
+
           <div className="hidden w-16 sm:block" />
         </section>
 
-        {/* Quick input (keep simple while we iterate) */}
+        <section>
+          <div className="rounded-3xl border border-sky-200/50 bg-slate-950/85 p-4 sm:p-5 backdrop-blur-xl shadow-[0_0_34px_rgba(56,189,248,0.24)]">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.22em] text-sky-200/90">
+                  Arm Star Sync
+                </p>
+                <p className="mt-1 text-sm leading-relaxed text-slate-100/90">
+                  Arm your band so the next person who taps it opens a guest Star Sync page on their phone.
+                </p>
+                <p className="mt-2 text-[11px] text-slate-400">
+                  Band ID:{" "}
+                  <span className="font-semibold text-slate-200">
+                    {bandId || "No band detected"}
+                  </span>
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleArmStarSync}
+                disabled={!bandId || armStatus === "arming"}
+                className={
+                  "rounded-2xl border px-4 py-3 text-sm font-semibold transition " +
+                  (!bandId || armStatus === "arming"
+                    ? "cursor-not-allowed border-slate-700 bg-slate-900 text-slate-500"
+                    : armStatus === "armed"
+                    ? "border-emerald-200/80 bg-emerald-300 text-slate-950 shadow-[0_0_28px_rgba(110,231,183,0.45)]"
+                    : "border-yellow-200/80 bg-gradient-to-r from-yellow-400/95 via-amber-300/95 to-yellow-200/95 text-slate-950 shadow-[0_0_30px_rgba(250,204,21,0.55)] hover:brightness-110")
+                }
+              >
+                {armStatus === "arming"
+                  ? "Arming..."
+                  : armStatus === "armed"
+                  ? "Star Sync Armed"
+                  : "Arm Star Sync"}
+              </button>
+            </div>
+
+            {armStatus === "armed" && (
+              <div className="mt-4 rounded-2xl border border-emerald-200/30 bg-emerald-400/10 p-3 text-sm text-slate-100">
+                Ready. Have someone tap your band now. This works for the next tap only, then turns off.
+              </div>
+            )}
+
+            {armStatus === "error" && armError && (
+              <div className="mt-4 rounded-2xl border border-red-300/25 bg-red-500/10 p-3 text-sm text-slate-100">
+                {armError}
+              </div>
+            )}
+          </div>
+        </section>
+
         <section>
           <div className="rounded-3xl border border-slate-600/80 bg-slate-950/85 p-4 sm:p-5 backdrop-blur-xl shadow-[0_0_30px_rgba(0,0,0,0.85)]">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -448,10 +451,8 @@ export default function StarSyncPage() {
           </div>
         </section>
 
-        {/* Results */}
         {effectiveOtherSign && result && (
           <>
-            {/* 1) Overall Compatibility FIRST */}
             <section>
               <div className="rounded-3xl border border-yellow-200/50 bg-gradient-to-b from-slate-950/90 via-slate-950/95 to-slate-950/98 p-4 sm:p-5 backdrop-blur-xl shadow-[0_0_40px_rgba(0,0,0,0.9)]">
                 <p className="text-[11px] uppercase tracking-[0.22em] text-yellow-100/90">
@@ -475,7 +476,6 @@ export default function StarSyncPage() {
               </div>
             </section>
 
-            {/* 2) Category selector */}
             <section>
               <div className="rounded-3xl border border-sky-200/40 bg-slate-950/85 p-4 sm:p-5 backdrop-blur-xl shadow-[0_0_30px_rgba(15,23,42,0.85)]">
                 <p className="text-[11px] uppercase tracking-[0.22em] text-sky-200/90">
@@ -490,7 +490,6 @@ export default function StarSyncPage() {
                     value={category}
                     onChange={(v) => {
                       setCategory(v as ConnectionCategory);
-                      // reset lens for clarity when switching category
                       setLens("strengths");
                     }}
                     options={[
@@ -503,7 +502,6 @@ export default function StarSyncPage() {
               </div>
             </section>
 
-            {/* 3) Category meter + summary */}
             <section>
               <div className="rounded-3xl border border-slate-600/80 bg-slate-950/85 p-4 sm:p-5 backdrop-blur-xl shadow-[0_0_30px_rgba(0,0,0,0.85)]">
                 <p className="text-[11px] uppercase tracking-[0.22em] text-slate-300">
@@ -534,7 +532,6 @@ export default function StarSyncPage() {
               </div>
             </section>
 
-            {/* 4) Strengths vs Challenges toggle for that category */}
             <section className="mb-6">
               <div className="rounded-3xl border border-yellow-200/40 bg-slate-950/90 p-4 sm:p-5 backdrop-blur-xl shadow-[0_0_40px_rgba(0,0,0,0.9)]">
                 <div className="flex items-center justify-between gap-3">
@@ -589,7 +586,7 @@ export default function StarSyncPage() {
                 </div>
 
                 <p className="mt-4 text-[11px] text-slate-400">
-                  These insights are a lightweight preview. Later we can make this feel more “real-time”
+                  These insights are a lightweight preview. Later we can make this feel more real-time
                   by mixing in the day’s sky positions + your meters.
                 </p>
               </div>

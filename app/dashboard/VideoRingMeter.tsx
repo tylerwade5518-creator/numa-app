@@ -1,31 +1,23 @@
 // app/dashboard/VideoRingMeter.tsx
 "use client";
 
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 type Labels = { low: string; mid: string; high: string };
 
 type Variant = "energy" | "luck" | "social";
 
 type Props = {
-  // Preferred (current)
-  progress?: number; // 0..1
-  directive?: string; // kept for back-compat; not rendered inside
-
-  // Back-compat (older calls)
-  value?: number; // 0..1
-  label?: string; // kept for back-compat; not rendered inside
-
+  progress?: number;
+  directive?: string;
+  value?: number;
+  label?: string;
   labels?: Labels;
   tickCount?: number;
-
-  // Visual controls
   videoSrc?: string;
   videoHueRotateDeg?: number;
   variant?: Variant;
-
-  // Layout hooks
-  size?: number; // default 132
+  size?: number;
   className?: string;
 };
 
@@ -61,8 +53,8 @@ export default function VideoRingMeter({
   className,
 }: Props) {
   const p = clamp01(progress ?? value);
+  const [videoReady, setVideoReady] = useState(false);
 
-  // keep back-compat params “used”
   void directive;
   void label;
 
@@ -75,21 +67,34 @@ export default function VideoRingMeter({
   const centerVideoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
-    const tryPlay = (v: HTMLVideoElement | null) => {
+    setVideoReady(false);
+
+    const tryPlay = async (v: HTMLVideoElement | null) => {
       if (!v) return;
+
       try {
         v.muted = true;
         v.playsInline = true as any;
         v.setAttribute("playsinline", "");
         v.setAttribute("webkit-playsinline", "");
-        v.play().catch(() => {});
+
+        v.load();
+        await v.play().catch(() => {});
       } catch {}
     };
-    tryPlay(ringVideoRef.current);
-    tryPlay(centerVideoRef.current);
-  }, []);
 
-  // Geometry (scaled from original 132 template)
+    Promise.all([
+      tryPlay(ringVideoRef.current),
+      tryPlay(centerVideoRef.current),
+    ]).finally(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setVideoReady(true);
+        });
+      });
+    });
+  }, [videoSrc]);
+
   const SIZE = size;
   const CX = SIZE / 2;
   const CY = SIZE / 2;
@@ -100,7 +105,9 @@ export default function VideoRingMeter({
   const innerDiskInset = (14 / 132) * SIZE;
   const innerDiskR = CX - innerDiskInset;
 
-  const angleDeg = useMemo(() => Math.max(0.001, p * 360), [p]);
+  const angleDeg = useMemo(() => {
+    return Math.max(3, p * 360);
+  }, [p]);
 
   const hue =
     typeof videoHueRotateDeg === "number"
@@ -110,11 +117,15 @@ export default function VideoRingMeter({
   const ringVideoStyle: React.CSSProperties = {
     filter: `hue-rotate(${hue}deg) saturate(1.32) brightness(1.12) contrast(1.08)`,
     transform: "scale(1.22) translateZ(0)",
+    backfaceVisibility: "hidden",
+    willChange: "transform",
   };
 
   const centerVideoStyle: React.CSSProperties = {
     filter: `hue-rotate(${hue}deg) saturate(1.18) brightness(0.92) contrast(1.08)`,
     transform: "scale(1.12) translateZ(0)",
+    backfaceVisibility: "hidden",
+    willChange: "transform",
   };
 
   const centerMaskStyle = useMemo(() => {
@@ -139,6 +150,8 @@ export default function VideoRingMeter({
       maskPosition: "center",
       transform: "translateZ(0)",
       WebkitTransform: "translateZ(0)",
+      backfaceVisibility: "hidden",
+      willChange: "transform",
     } as React.CSSProperties;
   }, [innerDiskR, CX, CY, SIZE]);
 
@@ -160,7 +173,6 @@ export default function VideoRingMeter({
       rgba(255,255,255,0) ${angleDeg}deg 360deg
     )`;
 
-    // cap centers
     const sx = CX;
     const sy = CY - ringMidR;
 
@@ -201,20 +213,25 @@ export default function VideoRingMeter({
       maskImage: images,
       WebkitMaskRepeat: "no-repeat",
       maskRepeat: "no-repeat",
-      WebkitMaskSize: "100% 100%, 100% 100%, 100% 100%",
-      maskSize: "100% 100%, 100% 100%, 100% 100%",
-      WebkitMaskPosition: "center, center, center",
-      maskPosition: "center, center, center",
+      WebkitMaskSize: showCaps
+        ? "100% 100%, 100% 100%, 100% 100%"
+        : "100% 100%, 100% 100%",
+      maskSize: showCaps
+        ? "100% 100%, 100% 100%, 100% 100%"
+        : "100% 100%, 100% 100%",
+      WebkitMaskPosition: showCaps ? "center, center, center" : "center, center",
+      maskPosition: showCaps ? "center, center, center" : "center, center",
       WebkitMaskComposite: composites,
       transform: "translateZ(0)",
       WebkitTransform: "translateZ(0)",
-      willChange: "transform",
+      willChange: "transform, opacity, -webkit-mask-image, mask-image",
+      backfaceVisibility: "hidden",
+      contain: "paint",
     };
 
     return style as React.CSSProperties;
   }, [masks.donutMask, masks.progressMask, masks.capMask, showCaps]);
 
-  // Static track behind everything (subtle dark baseline)
   const trackStyle: React.CSSProperties = useMemo(() => {
     const thickness = ringThickness * 0.92;
     return {
@@ -228,10 +245,11 @@ export default function VideoRingMeter({
       boxShadow: `inset 0 0 ${Math.max(10, SIZE * 0.09)}px rgba(255,255,255,0.06)`,
       pointerEvents: "none",
       position: "absolute",
+      transform: "translateZ(0)",
+      backfaceVisibility: "hidden",
     };
   }, [CX, CY, ringMidR, ringThickness, SIZE]);
 
-  // Dims ONLY the unfilled portion
   const unfilledShadeStyle: React.CSSProperties = useMemo(() => {
     const inv = `conic-gradient(from -90deg,
       rgba(0,0,0,0) 0deg ${angleDeg}deg,
@@ -263,19 +281,22 @@ export default function VideoRingMeter({
       maskPosition: "center, center",
       WebkitMaskComposite: "source-in",
       background: "rgba(0,0,0,0.62)",
-      opacity: 0.62,
+      opacity: videoReady ? 0.62 : 0,
+      transition: "opacity 180ms ease",
       pointerEvents: "none",
       position: "absolute",
       inset: 0,
       borderRadius: 9999,
       transform: "translateZ(0)",
       WebkitTransform: "translateZ(0)",
+      backfaceVisibility: "hidden",
+      willChange: "opacity, transform",
+      contain: "paint",
     };
 
     return style as React.CSSProperties;
-  }, [CX, CY, ringMidR, ringThickness, angleDeg, SIZE]);
+  }, [CX, CY, ringMidR, ringThickness, angleDeg, SIZE, videoReady]);
 
-  // Subtle endpoint glow
   const endGlowStyle: React.CSSProperties = useMemo(() => {
     const { ex, ey } = masks.end;
     const r = ringThickness * 0.42;
@@ -286,20 +307,32 @@ export default function VideoRingMeter({
       top: ey,
       width: r * 2,
       height: r * 2,
-      transform: "translate(-50%, -50%)",
+      transform: "translate(-50%, -50%) translateZ(0)",
       borderRadius: 9999,
       pointerEvents: "none",
       background:
         "radial-gradient(circle at center, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.10) 38%, rgba(255,255,255,0) 72%)",
       filter: `blur(${Math.max(1.5, SIZE * 0.012)}px)`,
       mixBlendMode: "screen",
-      opacity: showCaps ? 0.55 : 0,
+      opacity: showCaps && videoReady ? 0.55 : 0,
+      transition: "opacity 180ms ease",
+      backfaceVisibility: "hidden",
     };
-  }, [masks.end, ringThickness, SIZE, showCaps]);
+  }, [masks.end, ringThickness, SIZE, showCaps, videoReady]);
 
   return (
     <div className={"relative flex items-center justify-center " + (className ?? "")}>
-      <div className="relative" style={{ width: SIZE, height: SIZE }}>
+      <div
+        className="relative"
+        style={{
+          width: SIZE,
+          height: SIZE,
+          transform: "translateZ(0)",
+          WebkitTransform: "translateZ(0)",
+          backfaceVisibility: "hidden",
+          contain: "layout paint",
+        }}
+      >
         <div className="absolute inset-0 rounded-full bg-black/35" />
 
         {/* Center plasma */}
@@ -368,7 +401,18 @@ export default function VideoRingMeter({
         </svg>
 
         {/* Ring */}
-        <div className="absolute inset-0 overflow-hidden rounded-full">
+        <div
+          className="absolute inset-0 overflow-hidden rounded-full"
+          style={{
+            opacity: videoReady ? 1 : 0,
+            transition: "opacity 180ms ease",
+            transform: "translateZ(0)",
+            WebkitTransform: "translateZ(0)",
+            willChange: "transform, opacity",
+            backfaceVisibility: "hidden",
+            contain: "paint",
+          }}
+        >
           <div className="absolute inset-0" style={ringMaskStyle}>
             <div className="relative h-full w-full">
               <video
@@ -393,14 +437,13 @@ export default function VideoRingMeter({
           <div style={endGlowStyle} />
         </div>
 
-        {/* Center text (percentage only) */}
+        {/* Center text */}
         <div className="absolute inset-0 flex items-center justify-center px-3 text-center">
           <div className="meterPct">{pct}%</div>
         </div>
       </div>
 
       <style jsx>{`
-        /* Bigger, lighter, less “bulky” */
         .meterPct {
           font-size: 16px;
           font-weight: 650;
@@ -416,6 +459,7 @@ export default function VideoRingMeter({
           inset: -1px;
           border-radius: 9999px;
         }
+
         .ringFeather::before {
           content: "";
           position: absolute;

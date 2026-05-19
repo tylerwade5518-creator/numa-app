@@ -935,31 +935,19 @@ function DashboardInner() {
                   </div>
 
                   <button
-                    type="button"
-                    onClick={() => {
-                      setShowTapShare(true);
-                      setSyncError(null);
-                      setIsArmed(false);
-                      setSecondsRemaining(60);
-                    }}
-                    disabled={!bandId}
-                    className={
-                      "mt-1 flex h-24 w-24 items-center justify-center rounded-full border text-center transition " +
-                      (!bandId
-                        ? "cursor-not-allowed border-slate-600/60 bg-slate-900/70 text-slate-500"
-                        : "border-yellow-200/90 bg-gradient-to-br from-yellow-400/95 via-amber-300/95 to-yellow-200/95 text-slate-950 shadow-[0_0_28px_rgba(250,204,21,0.65)] hover:brightness-110")
-                    }
-                    title={
-                      bandId
-                        ? "Open Tap Share"
-                        : "Open /dashboard?band=YOUR_BAND_ID first"
-                    }
-                  >
-                    <span className="px-3 text-[11px] font-semibold uppercase tracking-[0.18em]">
-                      Tap Share
-                    </span>
-                  </button>
-
+  type="button"
+  onClick={() => {
+    setShowTapShare(true);
+    setSyncError(null);
+    setIsArmed(false);
+    setSecondsRemaining(60);
+  }}
+  className="mt-1 flex h-24 w-24 items-center justify-center rounded-full border border-yellow-200/90 bg-yellow-300 bg-gradient-to-br from-yellow-400 via-amber-300 to-yellow-100 text-center text-slate-950 shadow-[0_0_32px_rgba(250,204,21,0.72)] transition-all duration-300 hover:scale-[1.03] hover:brightness-110 active:scale-[0.98]"
+>
+  <span className="px-3 text-[11px] font-semibold uppercase tracking-[0.18em]">
+    Tap Share
+  </span>
+</button>
                   <p className="text-[11px] text-slate-500">
                     One-armed share that turns off after a single tap—every tap
                     is intentional.
