@@ -425,13 +425,64 @@ function DashboardInner() {
     if (resolved) localStorage.setItem(LAST_BAND_STORAGE_KEY, resolved);
   }, [bandIdFromUrl]);
 
-  // ✅ Your current identity values (leave as-is; can be wired later)
-  const bandName = "NUMA BAND";
-  const displayName = "Tyler";
-  const sign = "Aquarius";
-  const birthday = "Feb 5";
+ const bandName = "NUMA BAND";
 
-  const todayLabel = "Today’s Alignment";
+const [displayName, setDisplayName] = useState("NUMA Explorer");
+const [sign, setSign] = useState("Aquarius");
+const [birthday, setBirthday] = useState("");
+
+const todayLabel = "Today’s Alignment";
+
+useEffect(() => {
+  let cancelled = false;
+
+  async function loadProfile() {
+    const supabase = getSupabase();
+    if (!supabase) return;
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const user = sessionData?.session?.user;
+
+    if (!user) return;
+
+    const { data: profile, error } = await supabase
+      .from("profiles")
+      .select("display_name, username, birthdate, sign, band_code")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (error || !profile || cancelled) return;
+
+    const profileDisplayName =
+      (profile.display_name || profile.username || "NUMA Explorer").trim();
+
+    const profileSign = (profile.sign || "Aquarius").trim();
+
+    let birthdayLabel = "";
+    if (profile.birthdate) {
+      const d = new Date(profile.birthdate + "T00:00:00");
+      birthdayLabel = d.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+    }
+
+    setDisplayName(profileDisplayName);
+    setSign(profileSign);
+    setBirthday(birthdayLabel);
+
+    if (profile.band_code && !bandIdFromUrl) {
+      setBandId(profile.band_code);
+      localStorage.setItem(LAST_BAND_STORAGE_KEY, profile.band_code);
+    }
+  }
+
+  loadProfile();
+
+  return () => {
+    cancelled = true;
+  };
+}, [bandIdFromUrl]);
 
   // ✅ Daily JSON state
   const [daily, setDaily] = useState<DailyJson | null>(null);
@@ -750,7 +801,7 @@ function DashboardInner() {
                 {displayName} – {sign}
               </h1>
               <p className="text-xs text-slate-300 sm:text-sm">
-                Born {birthday} • {todayLabel}
+                {birthday ? `Born ${birthday} • ${todayLabel}` : todayLabel}
               </p>
 
               {bandId ? (
