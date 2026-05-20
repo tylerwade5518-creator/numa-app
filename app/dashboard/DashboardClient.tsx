@@ -3,7 +3,8 @@
 
 import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { type SupabaseClient } from "@supabase/supabase-js";
+import { createSupabaseBrowser } from "../../lib/supabase/client";
 import AnimatedSpaceBackground from "./AnimatedSpaceBackground";
 
 /** Moon phase / daily instrument panel (top widget) */
@@ -23,10 +24,7 @@ import VideoRingMeter from "./VideoRingMeter";
    ------------------------------- */
 
 function getSupabase(): SupabaseClient | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
+  return createSupabaseBrowser();
 }
 
 /**
