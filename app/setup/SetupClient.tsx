@@ -17,7 +17,6 @@ const months = [
   "July","August","September","October","November","December",
 ];
 
-// Simple year range – you can adjust later if you want
 const years = Array.from({ length: 70 }, (_, i) => `${1955 + i}`);
 
 const PENDING_BAND_STORAGE_KEY = "numa:pendingBandCode";
@@ -89,7 +88,6 @@ export default function SetupClient() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Resolve band id from URL OR localStorage fallback
   useEffect(() => {
     const pending = safeGetPendingBand();
     const resolved = (bandFromUrl || pending || "").trim();
@@ -138,7 +136,6 @@ export default function SetupClient() {
   const handleNextFromClaim = async () => {
     setError(null);
 
-    // If not logged in, send them to signup but bring them back here
     try {
       const { data, error: sessionErr } = await supabase.auth.getSession();
       if (sessionErr) throw sessionErr;
@@ -166,7 +163,6 @@ export default function SetupClient() {
     setStep(3);
   };
 
-  // REAL finish: require auth; claim band; set profile.band_code; route to dashboard
   const handleFinish = async () => {
     setError(null);
 
@@ -189,49 +185,29 @@ export default function SetupClient() {
         return;
       }
 
-      // 1) Fetch band
-      const { data: band, error: bandFetchErr } = await supabase
-        .from("bands")
-        .select("id, band_code, owner_user_id, status, claimed_at")
-        .eq("band_code", bandId)
-        .maybeSingle();
+      const res = await fetch("/api/claim-band", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          bandCode: bandId,
+          userId: user.id,
+          sign,
+          birthMonth: birth.month,
+          birthDay: birth.day,
+          birthYear: birth.year,
+        }),
+      });
 
-      if (bandFetchErr) throw bandFetchErr;
-      if (!band) throw new Error("That band code was not found. Please tap your band again.");
+      const json = await res.json().catch(() => null);
 
-      const owner = (band as any).owner_user_id as string | null;
-      if (owner && owner !== user.id) throw new Error("This band is already linked to another account.");
-
-      // 2) Claim if needed
-      if (!owner) {
-        const { error: claimErr } = await supabase
-          .from("bands")
-          .update({
-            owner_user_id: user.id,
-            status: "claimed",
-            claimed_at: new Date().toISOString(),
-          })
-          .eq("id", (band as any).id);
-
-        if (claimErr) throw claimErr;
+      if (!res.ok || !json?.ok) {
+        throw new Error(json?.error || "Could not link this band. Please tap your band again.");
       }
 
-      // 3) Store the band on the user's profile
-      const { error: profErr } = await supabase
-        .from("profiles")
-        .update({
-          band_code: bandId,
-          // If you have columns, you can store these later. Keeping it minimal right now.
-          // sign,
-        })
-        .eq("user_id", user.id);
-
-      if (profErr) throw profErr;
-
-      // 4) Clear pending band so it doesn’t “stick” to future logins
       safeClearPendingBand();
 
-      // 5) Dashboard
       router.replace(`/dashboard?band=${encodeURIComponent(bandId)}`);
     } catch (e: any) {
       setError(e?.message || "Something went wrong finishing setup. Please try again.");
