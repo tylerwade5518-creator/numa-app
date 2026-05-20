@@ -16,37 +16,47 @@ export async function POST(req: Request) {
     const userId = String(body?.userId ?? "").trim();
 
     if (!bandCode) {
-      return NextResponse.json(
-        { ok: false, error: "Missing band code." },
-        { status: 400 }
-      );
+      return NextResponse.json({ ok: false, error: "Missing band code." }, { status: 400 });
     }
 
     if (!userId) {
-      return NextResponse.json(
-        { ok: false, error: "Missing user id." },
-        { status: 400 }
-      );
+      return NextResponse.json({ ok: false, error: "Missing user id." }, { status: 400 });
     }
 
-    const { data: band, error: bandFetchErr } = await supabaseAdmin
+    const nowIso = new Date().toISOString();
+
+    let { data: band, error: bandFetchErr } = await supabaseAdmin
       .from("bands")
       .select("id, band_code, owner_user_id, status, claimed_at")
       .eq("band_code", bandCode)
       .maybeSingle();
 
     if (bandFetchErr) {
-      return NextResponse.json(
-        { ok: false, error: bandFetchErr.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ ok: false, error: bandFetchErr.message }, { status: 500 });
     }
 
     if (!band) {
-      return NextResponse.json(
-        { ok: false, error: "That band code was not found. Please tap your band again." },
-        { status: 404 }
-      );
+      const created = await supabaseAdmin
+        .from("bands")
+        .insert({
+          band_code: bandCode,
+          status: "unclaimed",
+          owner_user_id: null,
+          claimed_at: null,
+          created_at: nowIso,
+          updated_at: nowIso,
+        })
+        .select("id, band_code, owner_user_id, status, claimed_at")
+        .maybeSingle();
+
+      if (created.error || !created.data) {
+        return NextResponse.json(
+          { ok: false, error: created.error?.message || "Could not create band." },
+          { status: 500 }
+        );
+      }
+
+      band = created.data;
     }
 
     const owner = (band as any).owner_user_id as string | null;
@@ -64,16 +74,13 @@ export async function POST(req: Request) {
         .update({
           owner_user_id: userId,
           status: "claimed",
-          claimed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          claimed_at: nowIso,
+          updated_at: nowIso,
         })
         .eq("id", (band as any).id);
 
       if (claimErr) {
-        return NextResponse.json(
-          { ok: false, error: claimErr.message },
-          { status: 500 }
-        );
+        return NextResponse.json({ ok: false, error: claimErr.message }, { status: 500 });
       }
     }
 
@@ -85,10 +92,7 @@ export async function POST(req: Request) {
       .eq("user_id", userId);
 
     if (profileErr) {
-      return NextResponse.json(
-        { ok: false, error: profileErr.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ ok: false, error: profileErr.message }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true, bandCode });
