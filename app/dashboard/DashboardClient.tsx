@@ -445,13 +445,18 @@ useEffect(() => {
 
     if (!user) return;
 
-    const { data: profile, error } = await supabase
-      .from("profiles")
-      .select("display_name, username, birthdate, sign, band_code")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    const res = await fetch(
+  `/api/profile?userId=${encodeURIComponent(user.id)}`,
+  {
+    cache: "no-store",
+  }
+);
 
-    if (error || !profile || cancelled) return;
+const json = await res.json().catch(() => null);
+
+if (!res.ok || !json?.ok || cancelled) return;
+
+const profile = json.profile;
 
     const profileDisplayName =
       (profile.display_name || profile.username || "NUMA Explorer").trim();
