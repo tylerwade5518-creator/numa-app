@@ -453,9 +453,13 @@ console.log("SESSION USER:", user);
 
 const json = await res.json().catch(() => null);
 
-if (!res.ok || !json?.ok || cancelled) return;
+if (!res.ok || !json?.ok || cancelled) {
+  console.log("PROFILE FETCH FAILED:", res.status, json);
+  return;
+}
 
 const profile = json.profile;
+console.log("PROFILE JSON:", json);
 console.log("PROFILE RESPONSE:", profile);
     const profileDisplayName =
       (profile.display_name || profile.username || "NUMA Explorer").trim();
@@ -812,6 +816,7 @@ console.log("PROFILE RESPONSE:", profile);
   <div>DEBUG NAME: {displayName}</div>
   <div>DEBUG BDAY: {birthday}</div>
   <div>DEBUG USER: {debugUserId}</div>
+  <div>DEBUG API OK: {sign !== "Aquarius" ? "YES" : "NO"}</div>
 </div>
               {bandId ? (
                 <p className="text-[11px] text-slate-400">
