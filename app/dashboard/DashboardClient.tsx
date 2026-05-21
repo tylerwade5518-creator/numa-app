@@ -428,7 +428,7 @@ function DashboardInner() {
 const [displayName, setDisplayName] = useState("NUMA Explorer");
 const [sign, setSign] = useState("Aquarius");
 const [birthday, setBirthday] = useState("");
-
+const [debugUserId, setDebugUserId] = useState("");
 const todayLabel = "Today’s Alignment";
 
 useEffect(() => {
@@ -440,6 +440,7 @@ useEffect(() => {
 
     const { data: sessionData } = await supabase.auth.getSession();
     const user = sessionData?.session?.user;
+    setDebugUserId(user?.id || "NO USER SESSION");
 console.log("SESSION USER:", user);
     if (!user) return;
 
@@ -810,6 +811,7 @@ console.log("PROFILE RESPONSE:", profile);
   <div>DEBUG SIGN: {sign}</div>
   <div>DEBUG NAME: {displayName}</div>
   <div>DEBUG BDAY: {birthday}</div>
+  <div>DEBUG USER: {debugUserId}</div>
 </div>
               {bandId ? (
                 <p className="text-[11px] text-slate-400">
