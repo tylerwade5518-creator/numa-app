@@ -455,6 +455,7 @@ const json = await res.json().catch(() => null);
 
 if (!res.ok || !json?.ok || cancelled) {
   console.log("PROFILE FETCH FAILED:", res.status, json);
+  setDebugUserId(`API FAILED ${res.status}: ${json?.error || "no json"}`);
   return;
 }
 
