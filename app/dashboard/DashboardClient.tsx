@@ -873,7 +873,7 @@ const profile = json.profile;
                 <p className="metersTitle">{metersHero}</p>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 sm:gap-6 items-start">
+              <div className="grid grid-cols-3 gap-2 sm:gap-6 items-start py-2 overflow-visible">
                 {/* ENERGY */}
                 <div className="flex flex-col items-center text-center">
                   <div className="mb-1">
@@ -885,7 +885,7 @@ const profile = json.profile;
 
                   <VideoRingMeter
                     progress={energyLevel}
-                    size={108}
+                    size={118}
                     directive="Make moves"
                     tickCount={10}
                     videoSrc="/textures/solar-flare-animated.mp4"
@@ -904,7 +904,7 @@ const profile = json.profile;
 
                   <VideoRingMeter
                     progress={connectionLevel}
-                    size={108}
+                    size={118}
                     directive="Reach out"
                     tickCount={10}
                     videoSrc="/textures/solar-flare-animated.mp4"
@@ -923,7 +923,7 @@ const profile = json.profile;
 
                   <VideoRingMeter
                     progress={flowLevel}
-                    size={108}
+                    size={118}
                     directive="Get lucky"
                     tickCount={10}
                     videoSrc="/textures/solar-flare-animated.mp4"

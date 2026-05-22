@@ -99,8 +99,8 @@ export default function VideoRingMeter({
   const CX = SIZE / 2;
   const CY = SIZE / 2;
 
-  const ringMidR = (60 / 132) * SIZE;
-  const ringThickness = (30 / 132) * SIZE;
+  const ringMidR = (48 / 132) * SIZE;
+  const ringThickness = (24 / 132) * SIZE;
 
   const innerDiskInset = (14 / 132) * SIZE;
   const innerDiskR = CX - innerDiskInset;
