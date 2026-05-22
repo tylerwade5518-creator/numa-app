@@ -116,14 +116,14 @@ export default function VideoRingMeter({
 
   const ringVideoStyle: React.CSSProperties = {
     filter: `hue-rotate(${hue}deg) saturate(1.32) brightness(1.12) contrast(1.08)`,
-    transform: "scale(1.22) translateZ(0)",
+    transform: "scale(1.08) translateZ(0)",
     backfaceVisibility: "hidden",
     willChange: "transform",
   };
 
   const centerVideoStyle: React.CSSProperties = {
     filter: `hue-rotate(${hue}deg) saturate(1.18) brightness(0.92) contrast(1.08)`,
-    transform: "scale(1.12) translateZ(0)",
+    transform: "scale(1.04) translateZ(0)",
     backfaceVisibility: "hidden",
     willChange: "transform",
   };
@@ -336,7 +336,7 @@ export default function VideoRingMeter({
         <div className="absolute inset-0 rounded-full bg-black/35" />
 
         {/* Center plasma */}
-        <div className="absolute inset-0 overflow-visible rounded-full">
+        <div className="absolute inset-0 overflow-hidden rounded-full">
           <div className="absolute inset-0" style={centerMaskStyle}>
             <video
               ref={centerVideoRef}
@@ -402,7 +402,7 @@ export default function VideoRingMeter({
 
         {/* Ring */}
         <div
-          className="absolute inset-0 overflow-visible rounded-full"
+          className="absolute inset-0 overflow-hidden rounded-full"
           style={{
             opacity: videoReady ? 1 : 0,
             transition: "opacity 180ms ease",
