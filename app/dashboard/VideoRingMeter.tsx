@@ -330,13 +330,13 @@ export default function VideoRingMeter({
           transform: "translateZ(0)",
           WebkitTransform: "translateZ(0)",
           backfaceVisibility: "hidden",
-          contain: "layout paint",
+          contain: "layout",
         }}
       >
         <div className="absolute inset-0 rounded-full bg-black/35" />
 
         {/* Center plasma */}
-        <div className="absolute inset-0 overflow-hidden rounded-full">
+        <div className="absolute inset-0 overflow-visible rounded-full">
           <div className="absolute inset-0" style={centerMaskStyle}>
             <video
               ref={centerVideoRef}
@@ -402,7 +402,7 @@ export default function VideoRingMeter({
 
         {/* Ring */}
         <div
-          className="absolute inset-0 overflow-hidden rounded-full"
+          className="absolute inset-0 overflow-visible rounded-full"
           style={{
             opacity: videoReady ? 1 : 0,
             transition: "opacity 180ms ease",

@@ -813,20 +813,7 @@ const profile = json.profile;
               </p>
 
 
-              {bandId ? (
-                <p className="text-[11px] text-slate-400">
-                  Band ID:{" "}
-                  <span className="font-semibold text-slate-200">{bandId}</span>
-                </p>
-              ) : (
-                <p className="text-[11px] text-slate-500">
-                  Tap Share needs a band id. Open{" "}
-                  <span className="font-semibold text-slate-400">
-                    /dashboard?band=YOUR_BAND_ID
-                  </span>
-                  .
-                </p>
-              )}
+             
             </div>
 
             <button
