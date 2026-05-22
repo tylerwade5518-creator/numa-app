@@ -98,12 +98,6 @@ export async function GET(
 
   const bandCode = String(band.band_code ?? bandIdOrCode).trim();
 
-  const isClaimed = bandIsClaimed(band);
-
-  if (!isClaimed) {
-    return redirectTo(`/setup?band=${encodeURIComponent(bandCode)}`, req, "band_not_claimed");
-  }
-
   const { data: stateRow, error: stateError } = await supabaseAdmin
     .from("band_state")
     .select(
@@ -112,57 +106,69 @@ export async function GET(
     .eq("band_id", bandCode)
     .maybeSingle();
 
-  if (stateError) {
-    return redirectTo(`/dashboard?band=${encodeURIComponent(bandCode)}`, req, "band_state_error");
-  }
-
   const now = new Date();
   const nowIso = now.toISOString();
 
-  const starSyncArmed = Boolean(stateRow?.starsync_armed);
-  const starSyncUsed = Boolean(stateRow?.starsync_used_at);
+  if (!stateError) {
+    const starSyncArmed = Boolean(stateRow?.starsync_armed);
+    const starSyncUsed = Boolean(stateRow?.starsync_used_at);
 
-  if (starSyncArmed && !starSyncUsed) {
-    await supabaseAdmin
-      .from("band_state")
-      .update({
-        starsync_armed: false,
-        starsync_used_at: nowIso,
-        updated_at: nowIso,
-      })
-      .eq("band_id", bandCode);
+    if (starSyncArmed && !starSyncUsed) {
+      await supabaseAdmin
+        .from("band_state")
+        .update({
+          starsync_armed: false,
+          starsync_used_at: nowIso,
+          updated_at: nowIso,
+        })
+        .eq("band_id", bandCode);
 
-    return redirectTo(`/star-sync/guest?band=${encodeURIComponent(bandCode)}`, req, "ok_starsync");
-  }
-
-  const tapShareArmed = Boolean(stateRow?.tapshare_armed);
-
-  const armedUntilIso = stateRow?.tapshare_armed_until
-    ? new Date(stateRow.tapshare_armed_until as any).toISOString()
-    : null;
-
-  const notExpired = !armedUntilIso || armedUntilIso > nowIso;
-
-  if (tapShareArmed && notExpired) {
-    const token = makeShareToken();
-    const expiresAt = new Date(now.getTime() + 2 * 60 * 1000).toISOString();
-
-    const { error: insertError } = await supabaseAdmin.from("share_tokens").insert({
-      token,
-      band_code: bandCode,
-      status: "active",
-      expires_at: expiresAt,
-    });
-
-    if (insertError) {
       return redirectTo(
-        `/dashboard?band=${encodeURIComponent(bandCode)}`,
+        `/star-sync/guest?band=${encodeURIComponent(bandCode)}`,
         req,
-        "share_token_insert_failed"
+        "ok_starsync"
       );
     }
 
-    return redirectTo(`/share/${token}`, req, "ok_share");
+    const tapShareArmed = Boolean(stateRow?.tapshare_armed);
+
+    const armedUntilIso = stateRow?.tapshare_armed_until
+      ? new Date(stateRow.tapshare_armed_until as any).toISOString()
+      : null;
+
+    const notExpired = !armedUntilIso || armedUntilIso > nowIso;
+
+    if (tapShareArmed && notExpired) {
+      const token = makeShareToken();
+      const expiresAt = new Date(now.getTime() + 2 * 60 * 1000).toISOString();
+
+      const { error: insertError } = await supabaseAdmin.from("share_tokens").insert({
+        token,
+        band_code: bandCode,
+        status: "active",
+        expires_at: expiresAt,
+      });
+
+      if (insertError) {
+        return redirectTo(
+          `/dashboard?band=${encodeURIComponent(bandCode)}`,
+          req,
+          "share_token_insert_failed"
+        );
+      }
+
+      return redirectTo(`/share/${token}`, req, "ok_share");
+    }
+  }
+
+  const isClaimed = bandIsClaimed(band);
+
+  if (!isClaimed) {
+    return redirectTo(`/setup?band=${encodeURIComponent(bandCode)}`, req, "band_not_claimed");
+  }
+
+  if (stateError) {
+    return redirectTo(`/dashboard?band=${encodeURIComponent(bandCode)}`, req, "band_state_error");
   }
 
   return redirectTo(`/dashboard?band=${encodeURIComponent(bandCode)}`, req, "default_dashboard");
