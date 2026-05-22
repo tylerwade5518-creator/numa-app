@@ -428,7 +428,7 @@ function DashboardInner() {
 const [displayName, setDisplayName] = useState("NUMA Explorer");
 const [sign, setSign] = useState("Aquarius");
 const [birthday, setBirthday] = useState("");
-const [debugUserId, setDebugUserId] = useState("");
+
 const todayLabel = "Today’s Alignment";
 
 useEffect(() => {
@@ -440,8 +440,8 @@ useEffect(() => {
 
     const { data: sessionData } = await supabase.auth.getSession();
     const user = sessionData?.session?.user;
-    setDebugUserId(user?.id || "NO USER SESSION");
-console.log("SESSION USER:", user);
+    
+
     if (!user) return;
 
     const res = await fetch(
@@ -455,13 +455,12 @@ const json = await res.json().catch(() => null);
 
 if (!res.ok || !json?.ok || cancelled) {
   console.log("PROFILE FETCH FAILED:", res.status, json);
-  setDebugUserId(`API FAILED ${res.status}: ${json?.error || "no json"}`);
+
   return;
 }
 
 const profile = json.profile;
-console.log("PROFILE JSON:", json);
-console.log("PROFILE RESPONSE:", profile);
+
     const profileDisplayName =
       (profile.display_name || profile.username || "NUMA Explorer").trim();
 
@@ -812,13 +811,8 @@ console.log("PROFILE RESPONSE:", profile);
               <p className="text-xs text-slate-300 sm:text-sm">
                 {birthday ? `Born ${birthday} • ${todayLabel}` : todayLabel}
               </p>
-<div className="mt-2 text-[10px] text-red-300 space-y-1">
-  <div>DEBUG SIGN: {sign}</div>
-  <div>DEBUG NAME: {displayName}</div>
-  <div>DEBUG BDAY: {birthday}</div>
-  <div>DEBUG USER: {debugUserId}</div>
-  <div>DEBUG API OK: {sign !== "Aquarius" ? "YES" : "NO"}</div>
-</div>
+
+
               {bandId ? (
                 <p className="text-[11px] text-slate-400">
                   Band ID:{" "}
