@@ -226,7 +226,7 @@ export default function VideoRingMeter({
       WebkitTransform: "translateZ(0)",
       willChange: "transform, opacity, -webkit-mask-image, mask-image",
       backfaceVisibility: "hidden",
-      contain: "paint",
+      contain: "layout",
     };
 
     return style as React.CSSProperties;
@@ -291,7 +291,7 @@ export default function VideoRingMeter({
       WebkitTransform: "translateZ(0)",
       backfaceVisibility: "hidden",
       willChange: "opacity, transform",
-      contain: "paint",
+      contain: "layout",
     };
 
     return style as React.CSSProperties;
@@ -410,7 +410,7 @@ export default function VideoRingMeter({
             WebkitTransform: "translateZ(0)",
             willChange: "transform, opacity",
             backfaceVisibility: "hidden",
-            contain: "paint",
+            contain: "layout",
           }}
         >
           <div className="absolute inset-0" style={ringMaskStyle}>

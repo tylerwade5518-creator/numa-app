@@ -873,10 +873,10 @@ const profile = json.profile;
                 <p className="metersTitle">{metersHero}</p>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 sm:gap-6">
+              <div className="grid grid-cols-3 gap-2 sm:gap-6 items-start">
                 {/* ENERGY */}
                 <div className="flex flex-col items-center text-center">
-                  <div className="mb-2">
+                  <div className="mb-1">
                     <div className="meterHead">ENERGY</div>
                     <div className="mt-0.5 text-[11px] text-slate-400/90">
                       Capacity to act
@@ -885,6 +885,7 @@ const profile = json.profile;
 
                   <VideoRingMeter
                     progress={energyLevel}
+                    size={108}
                     directive="Make moves"
                     tickCount={10}
                     videoSrc="/textures/solar-flare-animated.mp4"
@@ -894,7 +895,7 @@ const profile = json.profile;
 
                 {/* CONNECTION */}
                 <div className="flex flex-col items-center text-center">
-                  <div className="mb-2">
+                  <div className="mb-1">
                     <div className="meterHead">CONNECTION</div>
                     <div className="mt-0.5 text-[11px] text-slate-400/90">
                       Social resonance
@@ -903,6 +904,7 @@ const profile = json.profile;
 
                   <VideoRingMeter
                     progress={connectionLevel}
+                    size={108}
                     directive="Reach out"
                     tickCount={10}
                     videoSrc="/textures/solar-flare-animated.mp4"
@@ -912,7 +914,7 @@ const profile = json.profile;
 
                 {/* THIRD METER (data key is flow in daily.json) */}
                 <div className="flex flex-col items-center text-center">
-                  <div className="mb-2">
+                  <div className="mb-1">
                     <div className="meterHead">FLOW</div>
                     <div className="mt-0.5 text-[11px] text-slate-400/90">
                       Timing advantage
@@ -921,6 +923,7 @@ const profile = json.profile;
 
                   <VideoRingMeter
                     progress={flowLevel}
+                    size={108}
                     directive="Get lucky"
                     tickCount={10}
                     videoSrc="/textures/solar-flare-animated.mp4"
