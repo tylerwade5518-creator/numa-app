@@ -11,29 +11,52 @@ export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
-  const [ready, setReady] = useState(false);
   const [message, setMessage] = useState("Opening secure reset session...");
 
   useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {
-        setReady(true);
-        setMessage("");
-      }
-    });
+    async function prepareRecoverySession() {
+      try {
+        if (typeof window === "undefined") return;
 
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) {
-        setReady(true);
-        setMessage("");
-      } else {
-        setMessage("Use the reset link from your email to open this page.");
-      }
-    });
+        const hash = window.location.hash.startsWith("#")
+          ? window.location.hash.slice(1)
+          : window.location.hash;
 
-    return () => subscription.unsubscribe();
+        const params = new URLSearchParams(hash);
+
+        const accessToken = params.get("access_token");
+        const refreshToken = params.get("refresh_token");
+
+        if (accessToken && refreshToken) {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+
+          if (error) {
+            setMessage(error.message);
+            return;
+          }
+
+          window.history.replaceState(null, "", "/reset-password");
+          setMessage("");
+          return;
+        }
+
+        const { data } = await supabase.auth.getSession();
+
+        if (data.session) {
+          setMessage("");
+          return;
+        }
+
+        setMessage("Auth session missing. Please request a fresh reset email and open the newest link.");
+      } catch (err: any) {
+        setMessage(err?.message || "Could not open reset session.");
+      }
+    }
+
+    prepareRecoverySession();
   }, [supabase]);
 
   async function handleUpdate(e: React.FormEvent) {
@@ -52,7 +75,17 @@ export default function ResetPasswordPage() {
 
     setLoading(true);
 
-    const { error } = await supabase.auth.updateUser({ password });
+    const { data } = await supabase.auth.getSession();
+
+    if (!data.session) {
+      setMessage("Auth session missing. Please request a fresh reset email and open the newest link.");
+      setLoading(false);
+      return;
+    }
+
+    const { error } = await supabase.auth.updateUser({
+      password,
+    });
 
     if (error) {
       setMessage(error.message);
@@ -83,7 +116,7 @@ export default function ResetPasswordPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="New password"
-           disabled={loading}
+            disabled={loading}
             className="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 disabled:opacity-50"
           />
 
@@ -94,7 +127,7 @@ export default function ResetPasswordPage() {
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
             placeholder="Confirm new password"
-           disabled={loading}
+            disabled={loading}
             className="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 disabled:opacity-50"
           />
 
