@@ -20,7 +20,7 @@ export default function ForgotPasswordPage() {
       email.trim(),
       {
         redirectTo:
-          "https://app.numabands.com/auth/callback?next=/reset-password",
+          "https://app.numabands.com/reset-password",
       }
     );
 
