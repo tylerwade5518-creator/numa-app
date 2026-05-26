@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { createSupabaseBrowser } from "../../lib/supabase/client";
 
 export default function ForgotPasswordPage() {
@@ -9,27 +10,41 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [sent, setSent] = useState(false);
 
-  async function handleReset(e: React.FormEvent) {
+  async function handleReset(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedEmail) {
+      setMessage("Enter your email address.");
+      return;
+    }
 
     setLoading(true);
     setMessage("");
 
+    const siteUrl =
+      process.env.NEXT_PUBLIC_SITE_URL || "https://app.numabands.com";
+
     const { error } = await supabase.auth.resetPasswordForEmail(
-      email.trim(),
+      normalizedEmail,
       {
-        redirectTo:
-          "https://app.numabands.com/reset-password",
+        redirectTo: `${siteUrl}/reset-password`,
       }
     );
 
     if (error) {
       setMessage(error.message);
-    } else {
-      setMessage("Password reset email sent.");
+      setLoading(false);
+      return;
     }
 
+    setSent(true);
+    setMessage(
+      "If an account exists for that email, a reset link has been sent."
+    );
     setLoading(false);
   }
 
@@ -40,12 +55,10 @@ export default function ForgotPasswordPage() {
           NUMA BANDS
         </div>
 
-        <h1 className="mt-2 text-2xl font-semibold">
-          Reset password
-        </h1>
+        <h1 className="mt-2 text-2xl font-semibold">Reset password</h1>
 
         <p className="mt-2 text-sm text-slate-300">
-          Enter your email and we’ll send you a reset link.
+          Enter your email and we’ll send you a secure reset link.
         </p>
 
         <form onSubmit={handleReset} className="mt-6 space-y-4">
@@ -55,22 +68,26 @@ export default function ForgotPasswordPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
-            className="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+            disabled={loading || sent}
+            className="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 disabled:opacity-50"
           />
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || sent}
             className="w-full rounded-xl bg-sky-500 hover:bg-sky-400 disabled:opacity-60 px-4 py-3 text-sm font-semibold text-slate-950"
           >
-            {loading ? "Sending..." : "Send reset email"}
+            {loading ? "Sending..." : sent ? "Reset email sent" : "Send reset email"}
           </button>
 
-          {message && (
-            <div className="text-xs text-slate-300">
-              {message}
-            </div>
-          )}
+          {message && <div className="text-xs text-slate-300">{message}</div>}
+
+          <div className="pt-2 text-center text-xs text-slate-400">
+            Remember your password?{" "}
+            <Link href="/login" className="text-sky-400 hover:text-sky-300">
+              Back to login
+            </Link>
+          </div>
         </form>
       </div>
     </main>

@@ -1,28 +1,64 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { createSupabaseBrowser } from "../../lib/supabase/client";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const token = searchParams.get("token");
+  const supabase = useMemo(() => createSupabaseBrowser(), []);
 
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState("Opening secure reset session...");
+
+  useEffect(() => {
+    async function handleRecovery() {
+      try {
+        if (typeof window === "undefined") return;
+
+        const hash = window.location.hash.startsWith("#")
+          ? window.location.hash.substring(1)
+          : window.location.hash;
+
+        const params = new URLSearchParams(hash);
+
+        const access_token = params.get("access_token");
+        const refresh_token = params.get("refresh_token");
+
+        if (!access_token || !refresh_token) {
+          setMessage(
+            "Invalid or expired reset link. Please request a new one."
+          );
+          return;
+        }
+
+        const { error } = await supabase.auth.setSession({
+          access_token,
+          refresh_token,
+        });
+
+        if (error) {
+          setMessage(error.message);
+          return;
+        }
+
+        window.history.replaceState(null, "", "/reset-password");
+
+        setMessage("");
+      } catch (err: any) {
+        setMessage(err?.message || "Could not open reset session.");
+      }
+    }
+
+    handleRecovery();
+  }, [supabase]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     setMessage("");
-
-    if (!token) {
-      setMessage("Invalid reset link.");
-      return;
-    }
 
     if (password.length < 8) {
       setMessage("Password must be at least 8 characters.");
@@ -34,37 +70,23 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    try {
-      setLoading(true);
+    setLoading(true);
 
-      const res = await fetch("/reset-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          token,
-          password,
-        }),
-      });
+    const { error } = await supabase.auth.updateUser({
+      password,
+    });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        setMessage(data.error || "Something went wrong.");
-        setLoading(false);
-        return;
-      }
-
-      setMessage("Password updated successfully. Redirecting...");
-
-      setTimeout(() => {
-        router.push("/login");
-      }, 1500);
-    } catch (err) {
-      setMessage("Something went wrong.");
+    if (error) {
+      setMessage(error.message);
       setLoading(false);
+      return;
     }
+
+    setMessage("Password updated successfully.");
+
+    setTimeout(() => {
+      router.push("/login");
+    }, 1500);
   }
 
   return (
@@ -75,11 +97,11 @@ export default function ResetPasswordPage() {
         </div>
 
         <h1 className="mt-2 text-2xl font-semibold">
-          Reset your password
+          Choose new password
         </h1>
 
         {message && (
-          <div className="mt-4 text-sm text-slate-300">
+          <div className="mt-4 text-xs text-slate-300">
             {message}
           </div>
         )}
@@ -87,22 +109,22 @@ export default function ResetPasswordPage() {
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <input
             type="password"
-            placeholder="New password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
             required
             minLength={8}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="New password"
             disabled={loading}
             className="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 disabled:opacity-50"
           />
 
           <input
             type="password"
-            placeholder="Confirm password"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
             required
             minLength={8}
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            placeholder="Confirm new password"
             disabled={loading}
             className="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 disabled:opacity-50"
           />
@@ -112,7 +134,7 @@ export default function ResetPasswordPage() {
             disabled={loading}
             className="w-full rounded-xl bg-sky-500 hover:bg-sky-400 disabled:opacity-60 px-4 py-3 text-sm font-semibold text-slate-950"
           >
-            {loading ? "Updating..." : "Update Password"}
+            {loading ? "Updating..." : "Update password"}
           </button>
         </form>
       </div>
