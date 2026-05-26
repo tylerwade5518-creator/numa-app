@@ -1,4 +1,3 @@
-// lib/supabase/client.ts
 import { createBrowserClient } from "@supabase/ssr";
 
 export function createSupabaseBrowser() {
@@ -13,5 +12,4 @@ export function createSupabaseBrowser() {
   );
 }
 
-// ✅ easy import everywhere
 export const supabase = createSupabaseBrowser();
