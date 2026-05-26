@@ -11,54 +11,90 @@ export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
   const [message, setMessage] = useState("Opening secure reset session...");
 
   useEffect(() => {
-    async function handleRecovery() {
+    async function prepareRecoverySession() {
       try {
         if (typeof window === "undefined") return;
 
+        const url = new URL(window.location.href);
+
+        // Supabase PKCE flow often returns ?code=...
+        const code = url.searchParams.get("code");
+
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+          if (error) {
+            setMessage(error.message);
+            return;
+          }
+
+          window.history.replaceState(null, "", "/reset-password");
+          setSessionReady(true);
+          setMessage("");
+          return;
+        }
+
+        // Older/implicit flow may return #access_token=...&refresh_token=...
         const hash = window.location.hash.startsWith("#")
-          ? window.location.hash.substring(1)
+          ? window.location.hash.slice(1)
           : window.location.hash;
 
         const params = new URLSearchParams(hash);
 
-        const access_token = params.get("access_token");
-        const refresh_token = params.get("refresh_token");
+        const accessToken = params.get("access_token");
+        const refreshToken = params.get("refresh_token");
 
-        if (!access_token || !refresh_token) {
-          setMessage(
-            "Invalid or expired reset link. Please request a new one."
-          );
+        if (accessToken && refreshToken) {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+
+          if (error) {
+            setMessage(error.message);
+            return;
+          }
+
+          window.history.replaceState(null, "", "/reset-password");
+          setSessionReady(true);
+          setMessage("");
           return;
         }
 
-        const { error } = await supabase.auth.setSession({
-          access_token,
-          refresh_token,
-        });
+        const { data } = await supabase.auth.getSession();
 
-        if (error) {
-          setMessage(error.message);
+        if (data.session) {
+          setSessionReady(true);
+          setMessage("");
           return;
         }
 
-        window.history.replaceState(null, "", "/reset-password");
-
-        setMessage("");
+        setMessage(
+          "Auth session missing. Please request a fresh reset email and open the newest link in the same browser."
+        );
       } catch (err: any) {
         setMessage(err?.message || "Could not open reset session.");
       }
     }
 
-    handleRecovery();
+    prepareRecoverySession();
   }, [supabase]);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     setMessage("");
+
+    if (!sessionReady) {
+      setMessage(
+        "Auth session missing. Please request a fresh reset email and open the newest link."
+      );
+      return;
+    }
 
     if (password.length < 8) {
       setMessage("Password must be at least 8 characters.");
@@ -82,7 +118,7 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    setMessage("Password updated successfully.");
+    setMessage("Password updated successfully. Redirecting...");
 
     setTimeout(() => {
       router.push("/login");
@@ -96,15 +132,9 @@ export default function ResetPasswordPage() {
           NUMA BANDS
         </div>
 
-        <h1 className="mt-2 text-2xl font-semibold">
-          Choose new password
-        </h1>
+        <h1 className="mt-2 text-2xl font-semibold">Choose new password</h1>
 
-        {message && (
-          <div className="mt-4 text-xs text-slate-300">
-            {message}
-          </div>
-        )}
+        {message && <div className="mt-4 text-xs text-slate-300">{message}</div>}
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <input
@@ -114,7 +144,7 @@ export default function ResetPasswordPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="New password"
-            disabled={loading}
+            disabled={loading || !sessionReady}
             className="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 disabled:opacity-50"
           />
 
@@ -125,13 +155,13 @@ export default function ResetPasswordPage() {
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
             placeholder="Confirm new password"
-            disabled={loading}
+            disabled={loading || !sessionReady}
             className="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 disabled:opacity-50"
           />
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !sessionReady}
             className="w-full rounded-xl bg-sky-500 hover:bg-sky-400 disabled:opacity-60 px-4 py-3 text-sm font-semibold text-slate-950"
           >
             {loading ? "Updating..." : "Update password"}
