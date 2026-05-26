@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowser } from "../../lib/supabase/client";
 
@@ -11,7 +11,24 @@ export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState("Preparing password reset...");
+
+  useEffect(() => {
+    async function prepareRecoverySession() {
+      const { data } = await supabase.auth.getSession();
+
+      if (data.session) {
+        setMessage("");
+        return;
+      }
+
+      setMessage(
+        "If this page opened from your reset email, enter your new password below."
+      );
+    }
+
+    prepareRecoverySession();
+  }, [supabase]);
 
   async function handleUpdate(e: React.FormEvent) {
     e.preventDefault();
