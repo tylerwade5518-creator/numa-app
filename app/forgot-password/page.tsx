@@ -16,15 +16,11 @@ export default function ForgotPasswordPage() {
     setLoading(true);
     setMessage("");
 
-    const origin =
-      typeof window !== "undefined"
-        ? window.location.origin
-        : "http://localhost:3000";
-
     const { error } = await supabase.auth.resetPasswordForEmail(
       email.trim(),
       {
-redirectTo: `${origin}/reset-password`,
+        redirectTo:
+          "https://app.numabands.com/reset-password",
       }
     );
 
