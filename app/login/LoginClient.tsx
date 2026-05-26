@@ -129,7 +129,15 @@ export default function LoginClient() {
               required
             />
           </div>
-
+<div className="-mt-2 text-right">
+  <button
+    type="button"
+    onClick={() => router.push("/forgot-password")}
+    className="text-sm font-medium text-sky-300 hover:text-sky-200 underline"
+  >
+    Forgot your password?
+  </button>
+</div>
           {error && (
             <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-slate-200">
               {error}
