@@ -18,6 +18,22 @@ export default function ResetPasswordPage() {
       try {
         if (typeof window === "undefined") return;
 
+        const url = new URL(window.location.href);
+        const code = url.searchParams.get("code");
+
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+          if (error) {
+            setMessage(error.message);
+            return;
+          }
+
+          window.history.replaceState(null, "", "/reset-password");
+          setMessage("");
+          return;
+        }
+
         const hash = window.location.hash.startsWith("#")
           ? window.location.hash.slice(1)
           : window.location.hash;
@@ -50,7 +66,9 @@ export default function ResetPasswordPage() {
           return;
         }
 
-        setMessage("Auth session missing. Please request a fresh reset email and open the newest link.");
+        setMessage(
+          "Auth session missing. Please request a fresh reset email and open the newest link."
+        );
       } catch (err: any) {
         setMessage(err?.message || "Could not open reset session.");
       }
@@ -78,7 +96,9 @@ export default function ResetPasswordPage() {
     const { data } = await supabase.auth.getSession();
 
     if (!data.session) {
-      setMessage("Auth session missing. Please request a fresh reset email and open the newest link.");
+      setMessage(
+        "Auth session missing. Please request a fresh reset email and open the newest link."
+      );
       setLoading(false);
       return;
     }
@@ -106,7 +126,9 @@ export default function ResetPasswordPage() {
 
         <h1 className="mt-2 text-2xl font-semibold">Choose new password</h1>
 
-        {message && <div className="mt-4 text-xs text-slate-300">{message}</div>}
+        {message && (
+          <div className="mt-4 text-xs text-slate-300">{message}</div>
+        )}
 
         <form onSubmit={handleUpdate} className="mt-6 space-y-4">
           <input
