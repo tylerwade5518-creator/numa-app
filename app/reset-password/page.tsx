@@ -11,23 +11,29 @@ export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("Preparing password reset...");
+  const [ready, setReady] = useState(false);
+  const [message, setMessage] = useState("Opening secure reset session...");
 
   useEffect(() => {
-    async function prepareRecoverySession() {
-      const { data } = await supabase.auth.getSession();
-
-      if (data.session) {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {
+        setReady(true);
         setMessage("");
-        return;
       }
+    });
 
-      setMessage(
-        "If this page opened from your reset email, enter your new password below."
-      );
-    }
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) {
+        setReady(true);
+        setMessage("");
+      } else {
+        setMessage("Use the reset link from your email to open this page.");
+      }
+    });
 
-    prepareRecoverySession();
+    return () => subscription.unsubscribe();
   }, [supabase]);
 
   async function handleUpdate(e: React.FormEvent) {
@@ -46,9 +52,7 @@ export default function ResetPasswordPage() {
 
     setLoading(true);
 
-    const { error } = await supabase.auth.updateUser({
-      password,
-    });
+    const { error } = await supabase.auth.updateUser({ password });
 
     if (error) {
       setMessage(error.message);
@@ -69,6 +73,8 @@ export default function ResetPasswordPage() {
 
         <h1 className="mt-2 text-2xl font-semibold">Choose new password</h1>
 
+        {message && <div className="mt-4 text-xs text-slate-300">{message}</div>}
+
         <form onSubmit={handleUpdate} className="mt-6 space-y-4">
           <input
             type="password"
@@ -77,7 +83,8 @@ export default function ResetPasswordPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="New password"
-            className="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+            disabled={!ready || loading}
+            className="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 disabled:opacity-50"
           />
 
           <input
@@ -87,18 +94,17 @@ export default function ResetPasswordPage() {
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
             placeholder="Confirm new password"
-            className="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+            disabled={!ready || loading}
+            className="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 disabled:opacity-50"
           />
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={!ready || loading}
             className="w-full rounded-xl bg-sky-500 hover:bg-sky-400 disabled:opacity-60 px-4 py-3 text-sm font-semibold text-slate-950"
           >
             {loading ? "Updating..." : "Update password"}
           </button>
-
-          {message && <div className="text-xs text-slate-300">{message}</div>}
         </form>
       </div>
     </main>
