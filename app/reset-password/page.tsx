@@ -15,81 +15,27 @@ export default function ResetPasswordPage() {
   const [message, setMessage] = useState("Opening secure reset session...");
 
   useEffect(() => {
-    async function prepareRecoverySession() {
-      try {
-        if (typeof window === "undefined") return;
+    async function checkSession() {
+      const { data, error } = await supabase.auth.getSession();
 
-        const url = new URL(window.location.href);
-
-        const errorDescription = url.searchParams.get("error_description");
-
-        if (errorDescription) {
-          setMessage(errorDescription);
-          return;
-        }
-
-        const code = url.searchParams.get("code");
-
-        if (code) {
-          setMessage(
-            "This reset link used the PKCE flow and cannot be opened here. Please request a brand-new reset email after the latest deployment finishes."
-          );
-          return;
-        }
-
-        const hash = window.location.hash.startsWith("#")
-          ? window.location.hash.slice(1)
-          : window.location.hash;
-
-        const params = new URLSearchParams(hash);
-
-        const accessToken = params.get("access_token");
-        const refreshToken = params.get("refresh_token");
-        const type = params.get("type");
-
-        if (!accessToken || !refreshToken) {
-          setMessage(
-            "Invalid or expired reset link. Please request a new reset email."
-          );
-          return;
-        }
-
-        if (type && type !== "recovery") {
-          setMessage("This link is not a password recovery link.");
-          return;
-        }
-
-        const { error } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken,
-        });
-
-        if (error) {
-          setMessage(error.message);
-          return;
-        }
-
-        window.history.replaceState(null, "", "/reset-password");
-
-        setSessionReady(true);
-        setMessage("");
-      } catch (err: any) {
-        setMessage(err?.message || "Could not open reset session.");
+      if (error || !data.session) {
+        setMessage("Auth session missing. Please request a fresh reset email.");
+        return;
       }
+
+      setSessionReady(true);
+      setMessage("");
     }
 
-    prepareRecoverySession();
+    checkSession();
   }, [supabase]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-
     setMessage("");
 
     if (!sessionReady) {
-      setMessage(
-        "Auth session missing. Please request a fresh reset email and open the newest link."
-      );
+      setMessage("Auth session missing. Please request a fresh reset email.");
       return;
     }
 
@@ -105,9 +51,7 @@ export default function ResetPasswordPage() {
 
     setLoading(true);
 
-    const { error } = await supabase.auth.updateUser({
-      password,
-    });
+    const { error } = await supabase.auth.updateUser({ password });
 
     if (error) {
       setMessage(error.message);
@@ -131,9 +75,7 @@ export default function ResetPasswordPage() {
 
         <h1 className="mt-2 text-2xl font-semibold">Choose new password</h1>
 
-        {message && (
-          <div className="mt-4 text-xs text-slate-300">{message}</div>
-        )}
+        {message && <div className="mt-4 text-xs text-slate-300">{message}</div>}
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <input
