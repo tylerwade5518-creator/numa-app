@@ -283,10 +283,10 @@ export default function BuyPage() {
       setActive((p) => clamp(p + 1, 0, slides.length - 1));
   };
 
-  const goToCheckout = () => {
-    // Keep this routing to whatever you already wired (Shopify product page, etc.)
-    router.push("/buy/checkout");
-  };
+const goToCheckout = () => {
+  window.location.href =
+    "https://numabands.myshopify.com/products/numa-band";
+};
 
   return (
     <div
