@@ -307,7 +307,7 @@ export default async function ShareTokenPage({
       "Share expired",
       "This Share Tap link is no longer active. Ask them to re-arm Tap Share and tap again.",
       <Link
-        href="/buy"
+        href="/https://numabands.myshopify.com/products/numa-band"
         className="inline-flex items-center justify-center rounded-2xl border border-white/15 bg-slate-900/60 px-4 py-2.5 text-sm hover:bg-slate-900/80"
       >
         Get a NUMA Band
@@ -519,7 +519,7 @@ export default async function ShareTokenPage({
             </a>
 
             <Link
-              href="/buy"
+              href="/https://numabands.myshopify.com/products/numa-band"
               className="flex items-center justify-center rounded-2xl border border-white/15 bg-slate-900/60 px-4 py-3 text-sm text-slate-100 hover:bg-slate-900/80"
             >
               Get a NUMA Band
