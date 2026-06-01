@@ -504,7 +504,9 @@ function StarSyncGuestContent() {
             <section className="mb-8 mt-2">
               <button
                 type="button"
-                onClick={() => router.push("/buy")}
+              onClick={() => {
+  window.location.href = "https://numabands.myshopify.com/products/numa-band";
+}}
                 className="mx-auto flex w-full max-w-2xl items-center justify-center rounded-full border border-yellow-100/80 bg-gradient-to-r from-yellow-500 via-yellow-300 to-yellow-100 px-6 py-4 text-sm font-extrabold uppercase tracking-[0.22em] text-slate-950 shadow-[0_0_34px_rgba(250,204,21,0.55)] transition hover:scale-[1.01] hover:brightness-110"
               >
                 Get Your NUMA Band
