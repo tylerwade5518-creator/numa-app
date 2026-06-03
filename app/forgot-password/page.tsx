@@ -25,15 +25,16 @@ export default function ForgotPasswordPage() {
     setLoading(true);
     setMessage("");
 
-   const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://numa-app-kyoi.vercel.app";
+    const siteUrl =
+      process.env.NEXT_PUBLIC_SITE_URL || "https://numa-app-kyoi.vercel.app";
 
-const { error } = await supabase.auth.resetPasswordForEmail(
-  normalizedEmail,
-  {
-    redirectTo: `${siteUrl}/auth/confirm?next=/reset-password`,
-  }
-);
+    const { error } = await supabase.auth.resetPasswordForEmail(
+      normalizedEmail,
+      {
+      redirectTo: `${siteUrl}/auth/callback?next=/reset-password`,
+      }
+    );
+
     if (error) {
       setMessage(error.message);
       setLoading(false);
