@@ -501,7 +501,7 @@ const profile = json.profile;
 
     (async () => {
       try {
-        const res = await fetch(`/daily.json?ts=${Date.now()}`, {
+        const res = await fetch(`/api/daily?ts=${Date.now()}`, {
           cache: "no-store",
         });
         if (!res.ok) return;

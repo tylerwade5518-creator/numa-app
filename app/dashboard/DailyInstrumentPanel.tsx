@@ -102,7 +102,7 @@ export default function DailyInstrumentPanel({
 
     async function loadDaily() {
       try {
-        const res = await fetch(`/daily.json?ts=${Date.now()}`, {
+        const res = await fetch(`/api/daily?ts=${Date.now()}`, {
           cache: "no-store",
           signal: controller.signal,
         });
