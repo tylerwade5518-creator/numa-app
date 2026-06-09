@@ -528,7 +528,7 @@ const profile = json.profile;
     signBlock?.horoscope?.title ??
     (signBlock as any)?.title ??
     ""
-  ).trim() || "DEbug fallback title";
+  ).trim() || "Quiet Confidence in Motion";
 
 const horoscopeSummary =
   (
