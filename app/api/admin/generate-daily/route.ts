@@ -13,6 +13,19 @@ export async function GET() {
   try {
     const today = new Date().toISOString().slice(0, 10);
 
+    const { data: moonRow, error: moonError } = await supabase
+  .from("moon_calendar")
+  .select("moon_phase, moon_sign")
+  .eq("date", today)
+  .single();
+
+if (moonError || !moonRow) {
+  throw new Error(`No moon_calendar row found for ${today}`);
+}
+
+const moonPhaseLabel = moonRow.moon_phase;
+const moonSignLabel = moonRow.moon_sign;
+
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY!,
     });
@@ -21,6 +34,12 @@ export async function GET() {
 Create NUMA daily astrology content for ${today}.
 
 Return ONLY valid JSON.
+Use this exact moon data:
+Moon Phase: ${moonPhaseLabel}
+Moon Sign: ${moonSignLabel}
+
+Use the exact moon phase and moon sign provided above.
+The values in the sky object must exactly match those values.
 Do not wrap it in markdown.
 Do not use \`\`\`json.
 Do not include any explanation.
@@ -29,10 +48,10 @@ Use this shape:
 {
   "schemaVersion": 1,
   "date": "${today}",
-  "sky": {
-    "moonPhaseLabel": "Waxing Gibbous",
-    "moonSignLabel": "Scorpio"
-  },
+"sky": {
+  "moonPhaseLabel": "${moonPhaseLabel}",
+  "moonSignLabel": "${moonSignLabel}"
+},
   "signs": {
     "aries": {
       "title": "",
