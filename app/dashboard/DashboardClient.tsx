@@ -524,12 +524,19 @@ const profile = json.profile;
 
   // ✅ Horoscope from JSON (fallback to your previous hardcoded values)
   const horoscopeTitle =
-    (signBlock?.horoscope?.title ?? "").trim() ||
-    "Quiet Confidence in Motion";
+  (
+    signBlock?.horoscope?.title ??
+    (signBlock as any)?.title ??
+    ""
+  ).trim() || "Quiet Confidence in Motion";
 
-  const horoscopeSummary =
-    (signBlock?.horoscope?.summary ?? "").trim() ||
-    "Today favors calm, deliberate moves instead of big dramatic swings. Keep your plans simple, follow through once, and let your quiet consistency stand out on its own.";
+const horoscopeSummary =
+  (
+    signBlock?.horoscope?.summary ??
+    (signBlock as any)?.summary ??
+    ""
+  ).trim() ||
+  "Today favors calm, deliberate moves instead of big dramatic swings. Keep your plans simple,";
 
   // ✅ Meters from JSON (0..100 or 0..1 supported), fallbacks stay sane
   const energyLevel = asPct01(signBlock?.meters?.energy ?? 0.86);
@@ -832,7 +839,7 @@ const profile = json.profile;
             <DailyInstrumentPanel />
           </section>
 
-         {/* MAIN HOROSCOPE CARD (NOW WIRED TO daily.json) */}
+         {/* MAIN HOROSCOPE CARD (NOW WIRED TO /api/daily) */}
 <section className="-mt-8 relative z-20">
   <div className="relative rounded-3xl border border-yellow-200/45 bg-slate-950/40 p-6 sm:p-7 backdrop-blur-md shadow-[0_0_45px_rgba(15,23,42,0.9)]">
     <div className="relative space-y-5">

@@ -123,7 +123,7 @@ export default function DailyInstrumentPanel({
     return () => controller.abort();
   }, []);
 
-  // ✅ Effective labels: daily.json > parent props > defaults
+  // ✅ Effective labels: /api/daily > parent props > defaults
   const effectivePhaseLabel =
     (dailyPhase ?? "").trim() ||
     (moonPhaseLabel ?? "").trim() ||
