@@ -518,7 +518,7 @@ const profile = json.profile;
   }, []);
 
   const signBlock = useMemo(() => {
-    const key = sign; // matches Title Case keys: "Aquarius", "Leo", etc.
+    const key = String(sign || "").toLowerCase(); // matches Title Case keys: "Aquarius", "Leo", etc.
     return daily?.signs?.[key] ?? null;
   }, [daily, sign]);
 
