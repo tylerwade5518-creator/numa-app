@@ -82,6 +82,10 @@ Rules:
 
     const contentJson = JSON.parse(cleanedText);
 
+    contentJson.generatedAt = new Date().toISOString();
+contentJson.generationId = crypto.randomUUID();
+contentJson.generatedBy = "generate-daily-route";
+
     const { error } = await supabase.from("daily_content").upsert(
       {
         date: today,
