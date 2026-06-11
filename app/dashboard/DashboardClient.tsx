@@ -544,8 +544,25 @@ const horoscopeSummary =
   const flowLevel = asPct01(signBlock?.meters?.flow ?? 0.62);
 
   // ✅ Meters hero title (replaces "Daily Meters")
-  const metersHero =
-    (signBlock?.metersHero ?? "").trim() || "Daily Meters";
+  const energyPct = Math.round(energyLevel * 100);
+const connectionPct = Math.round(connectionLevel * 100);
+const flowPct = Math.round(flowLevel * 100);
+
+let metersHero = "Today's strongest signal";
+
+if (
+  energyPct >= connectionPct &&
+  energyPct >= flowPct
+) {
+  metersHero = "Energy is strong. Make moves.";
+} else if (
+  connectionPct >= energyPct &&
+  connectionPct >= flowPct
+) {
+  metersHero = "Connection is strong. Reach out.";
+} else {
+  metersHero = "Flow is strong. Trust timing.";
+}
 
   const todayKey = useMemo(() => getLocalDayKey(), []);
 
