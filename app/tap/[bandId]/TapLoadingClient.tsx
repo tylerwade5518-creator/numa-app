@@ -12,10 +12,8 @@ export default function TapLoadingClient({ bandId }: { bandId: string }) {
 
         const data = await res.json();
 
-        if (data?.redirectTo) {
-  window.setTimeout(() => {
-    window.location.replace(data.redirectTo);
-  }, 2200);
+     if (data?.redirectTo) {
+  window.location.replace(data.redirectTo);
   return;
 }
 
