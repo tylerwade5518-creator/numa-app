@@ -15,7 +15,7 @@ export default function TapLoadingClient({ bandId }: { bandId: string }) {
         if (data?.redirectTo) {
   window.setTimeout(() => {
     window.location.replace(data.redirectTo);
-  }, 2000);
+  }, 2200);
   return;
 }
 
