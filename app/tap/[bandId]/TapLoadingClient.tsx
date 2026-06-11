@@ -13,9 +13,11 @@ export default function TapLoadingClient({ bandId }: { bandId: string }) {
         const data = await res.json();
 
         if (data?.redirectTo) {
-          window.location.replace(data.redirectTo);
-          return;
-        }
+  window.setTimeout(() => {
+    window.location.replace(data.redirectTo);
+  }, 2000);
+  return;
+}
 
         window.location.replace(
           `/setup?band=${encodeURIComponent(bandId)}&reason=tap_api_no_redirect`
