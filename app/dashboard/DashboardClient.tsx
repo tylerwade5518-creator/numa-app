@@ -429,11 +429,6 @@ const [displayName, setDisplayName] = useState("NUMA Explorer");
 const [sign, setSign] = useState("Aquarius");
 const [birthday, setBirthday] = useState("");
 
-const [profileLoaded, setProfileLoaded] = useState(false);
-const [dailyLoaded, setDailyLoaded] = useState(false);
-
-const dashboardReady = profileLoaded && dailyLoaded;
-
 const todayLabel = "Today’s Alignment";
 
 useEffect(() => {
@@ -447,10 +442,7 @@ useEffect(() => {
     const user = sessionData?.session?.user;
     
 
-    if (!user) {
-  setProfileLoaded(true);
-  return;
-}
+    if (!user) return;
 
     const res = await fetch(
   `/api/profile?userId=${encodeURIComponent(user.id)}`,
@@ -464,7 +456,6 @@ const json = await res.json().catch(() => null);
 if (!res.ok || !json?.ok || cancelled) {
   console.log("PROFILE FETCH FAILED:", res.status, json);
 
-  setProfileLoaded(true);
   return;
 }
 
@@ -487,8 +478,6 @@ const profile = json.profile;
     setDisplayName(profileDisplayName);
     setSign(profileSign);
     setBirthday(birthdayLabel);
-
-    setProfileLoaded(true);
 
     if (profile.band_code && !bandIdFromUrl) {
       setBandId(profile.band_code);
@@ -517,13 +506,10 @@ const profile = json.profile;
         });
         if (!res.ok) return;
         const data = (await res.json()) as DailyJson;
-        if (!cancelled) {
-  setDaily(data);
-  setDailyLoaded(true);
-}
+        if (!cancelled) setDaily(data);
       } catch {
-  setDailyLoaded(true);
-}
+        // ignore (fallbacks below will render)
+      }
     })();
 
     return () => {
@@ -808,20 +794,6 @@ const horoscopeSummary =
 
   return (
     <>
-    {!dashboardReady && (
-  <div className="fixed inset-0 z-[99999] bg-black transition-opacity duration-500">
-    <video
-      autoPlay
-      muted
-      loop
-      playsInline
-      preload="auto"
-      className="absolute inset-0 h-full w-full object-cover"
-    >
-      <source src="/numa-loading.mp4" type="video/mp4" />
-    </video>
-  </div>
-)}
       <div
         className="relative min-h-screen overflow-hidden bg-black"
         style={{
