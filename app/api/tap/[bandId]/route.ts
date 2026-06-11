@@ -8,10 +8,10 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-function redirectTo(path: string, req: Request, reason?: string) {
-  const url = new URL(path, req.url);
+function redirectPath(path: string, reason?: string) {
+  const url = new URL(path, "https://www.numabands.com");
   if (reason) url.searchParams.set("reason", reason);
-  return NextResponse.redirect(url);
+  return `${url.pathname}${url.search}`;
 }
 
 function makeShareToken(): string {
@@ -42,13 +42,11 @@ async function findBandSmart(bandIdOrCode: string) {
 
   if (byCodeIlike.data && !byCodeIlike.error) return byCodeIlike;
 
-  const byId = await supabaseAdmin
+  return await supabaseAdmin
     .from("bands")
     .select("*")
     .eq("id", cleanCode)
     .maybeSingle();
-
-  return byId;
 }
 
 async function createUnclaimedBand(bandCode: string) {
@@ -69,6 +67,10 @@ async function createUnclaimedBand(bandCode: string) {
     .maybeSingle();
 }
 
+function jsonRedirect(path: string) {
+  return NextResponse.json({ redirectTo: path });
+}
+
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ bandId: string }> }
@@ -77,7 +79,7 @@ export async function GET(
   const bandIdOrCode = String(bandId ?? "").trim();
 
   if (!bandIdOrCode) {
-    return redirectTo(`/setup?band=`, req, "no_band_param");
+    return jsonRedirect(redirectPath(`/setup?band=`, "no_band_param"));
   }
 
   let { data: band, error: bandError } = await findBandSmart(bandIdOrCode);
@@ -89,10 +91,11 @@ export async function GET(
   }
 
   if (bandError || !band) {
-    return redirectTo(
-      `/setup?band=${encodeURIComponent(bandIdOrCode)}`,
-      req,
-      bandError ? "band_create_error" : "band_not_found"
+    return jsonRedirect(
+      redirectPath(
+        `/setup?band=${encodeURIComponent(bandIdOrCode)}`,
+        bandError ? "band_create_error" : "band_not_found"
+      )
     );
   }
 
@@ -123,10 +126,11 @@ export async function GET(
         })
         .eq("band_id", bandCode);
 
-      return redirectTo(
-        `/star-sync/guest?band=${encodeURIComponent(bandCode)}`,
-        req,
-        "ok_starsync"
+      return jsonRedirect(
+        redirectPath(
+          `/star-sync/guest?band=${encodeURIComponent(bandCode)}`,
+          "ok_starsync"
+        )
       );
     }
 
@@ -150,26 +154,33 @@ export async function GET(
       });
 
       if (insertError) {
-        return redirectTo(
-          `/dashboard?band=${encodeURIComponent(bandCode)}`,
-          req,
-          "share_token_insert_failed"
+        return jsonRedirect(
+          redirectPath(
+            `/dashboard?band=${encodeURIComponent(bandCode)}`,
+            "share_token_insert_failed"
+          )
         );
       }
 
-      return redirectTo(`/share/${token}`, req, "ok_share");
+      return jsonRedirect(redirectPath(`/share/${token}`, "ok_share"));
     }
   }
 
   const isClaimed = bandIsClaimed(band);
 
   if (!isClaimed) {
-    return redirectTo(`/setup?band=${encodeURIComponent(bandCode)}`, req, "band_not_claimed");
+    return jsonRedirect(
+      redirectPath(`/setup?band=${encodeURIComponent(bandCode)}`, "band_not_claimed")
+    );
   }
 
   if (stateError) {
-    return redirectTo(`/dashboard?band=${encodeURIComponent(bandCode)}`, req, "band_state_error");
+    return jsonRedirect(
+      redirectPath(`/dashboard?band=${encodeURIComponent(bandCode)}`, "band_state_error")
+    );
   }
 
-  return redirectTo(`/dashboard?band=${encodeURIComponent(bandCode)}`, req, "default_dashboard");
+  return jsonRedirect(
+    redirectPath(`/dashboard?band=${encodeURIComponent(bandCode)}`, "default_dashboard")
+  );
 }
