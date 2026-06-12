@@ -518,9 +518,18 @@ const profile = json.profile;
   }, []);
 
   const signBlock = useMemo(() => {
-    const key = String(sign || "").toLowerCase(); // matches Title Case keys: "Aquarius", "Leo", etc.
-    return daily?.signs?.[key] ?? null;
-  }, [daily, sign]);
+  const rawSign = String(sign || "").trim();
+  const lowerSign = rawSign.toLowerCase();
+  const titleSign =
+    rawSign.charAt(0).toUpperCase() + rawSign.slice(1).toLowerCase();
+
+  return (
+    daily?.signs?.[lowerSign] ??
+    daily?.signs?.[titleSign] ??
+    daily?.signs?.[rawSign] ??
+    null
+  );
+}, [daily, sign]);
 
   // ✅ Horoscope from JSON (fallback to your previous hardcoded values)
   const horoscopeTitle =
