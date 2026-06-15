@@ -240,6 +240,9 @@ function StarSyncContent() {
   const [birthday, setBirthday] = useState("");
   const [syncType, setSyncType] = useState<SyncType>("friendship");
 
+  const [dailyContent, setDailyContent] = useState<any>(null);
+const [dailyError, setDailyError] = useState<string | null>(null);
+
   useEffect(() => {
     const bandFromUrl = searchParams.get("band") || "";
     const stored =
@@ -254,6 +257,24 @@ function StarSyncContent() {
       localStorage.setItem(LAST_BAND_STORAGE_KEY, resolved);
     }
   }, [searchParams]);
+  useEffect(() => {
+  async function loadDailyContent() {
+    try {
+      const res = await fetch("/api/daily", { cache: "no-store" });
+
+      if (!res.ok) {
+        throw new Error("Could not load daily content.");
+      }
+
+      const json = await res.json();
+      setDailyContent(json);
+    } catch (error: any) {
+      setDailyError(error.message || "Could not load daily content.");
+    }
+  }
+
+  loadDailyContent();
+}, []);
 
   const handleArmStarSync = async () => {
     if (!bandId) {
@@ -290,13 +311,26 @@ function StarSyncContent() {
   const effectiveOtherSign: ZodiacSign | null =
     mode === "birthday" ? otherSignFromBirthday : otherSign !== "" ? otherSign : null;
 
-  const scores = useMemo(() => {
-    if (!effectiveOtherSign) return null;
-    return getScores(ownerSign, effectiveOtherSign);
-  }, [ownerSign, effectiveOtherSign]);
+  const activeStarSync = useMemo(() => {
+  if (!dailyContent || !effectiveOtherSign) return null;
 
-  const activeScore = scores ? scores[syncType] : 0;
-  const activeReading = getReading(syncType, activeScore);
+  const starSync = dailyContent.starSync;
+  if (!starSync) return null;
+
+  const modeKey = syncType === "romantic" ? "romance" : "friendship";
+
+  return (
+    starSync?.[modeKey]?.[ownerSign]?.[effectiveOtherSign] ||
+    starSync?.[modeKey]?.[effectiveOtherSign]?.[ownerSign] ||
+    null
+  );
+}, [dailyContent, ownerSign, effectiveOtherSign, syncType]);
+
+const activeScore = activeStarSync?.score ?? 0;
+const activeReading =
+  activeStarSync?.sentence ||
+  activeStarSync?.reading ||
+  "Today’s Star Sync reading is still loading.";
 
   const runStarSync = () => {
     if (!effectiveOtherSign) return;
@@ -524,7 +558,7 @@ function StarSyncContent() {
           </section>
         )}
 
-        {step === "results" && effectiveOtherSign && scores && (
+        {step === "results" && effectiveOtherSign && activeStarSync && (
           <>
             <section className="text-center">
               <p className="text-[11px] uppercase tracking-[0.28em] text-sky-200/90">
