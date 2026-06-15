@@ -326,7 +326,7 @@ const [dailyError, setDailyError] = useState<string | null>(null);
   );
 }, [dailyContent, ownerSign, effectiveOtherSign, syncType]);
 
-const activeScore = activeStarSync?.score ?? 0;
+const activeScore = activeStarSync?.score ?? activeStarSync?.percentage ?? 50;
 const activeReading =
   activeStarSync?.sentence ||
   activeStarSync?.reading ||
@@ -558,7 +558,7 @@ const activeReading =
           </section>
         )}
 
-        {step === "results" && effectiveOtherSign && activeStarSync && (
+        {step === "results" && effectiveOtherSign && (
           <>
             <section className="text-center">
               <p className="text-[11px] uppercase tracking-[0.28em] text-sky-200/90">
