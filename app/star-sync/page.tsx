@@ -317,13 +317,14 @@ const [dailyError, setDailyError] = useState<string | null>(null);
   const starSync = dailyContent.starSync;
   if (!starSync) return null;
 
-  const modeKey = syncType === "romantic" ? "romance" : "friendship";
+  const keyA = `${ownerSign.toLowerCase()}_${effectiveOtherSign.toLowerCase()}`;
+  const keyB = `${effectiveOtherSign.toLowerCase()}_${ownerSign.toLowerCase()}`;
 
-  return (
-    starSync?.[modeKey]?.[ownerSign]?.[effectiveOtherSign] ||
-    starSync?.[modeKey]?.[effectiveOtherSign]?.[ownerSign] ||
-    null
-  );
+  const pair = starSync[keyA] || starSync[keyB];
+
+  if (!pair) return null;
+
+  return pair[syncType] || null;
 }, [dailyContent, ownerSign, effectiveOtherSign, syncType]);
 
 const activeScore = activeStarSync?.score ?? activeStarSync?.percentage ?? 50;
