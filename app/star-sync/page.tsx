@@ -324,7 +324,9 @@ const [dailyError, setDailyError] = useState<string | null>(null);
 
   if (!pair) return null;
 
-  return pair[syncType] || null;
+  const typeKey = syncType === "romantic" ? "romance" : "friendship";
+
+return pair[typeKey] || null;
 }, [dailyContent, ownerSign, effectiveOtherSign, syncType]);
 
 const activeScore = activeStarSync?.score ?? activeStarSync?.percentage ?? 50;
