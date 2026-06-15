@@ -43,7 +43,7 @@ export default function ForgotPasswordPage() {
 
     setSent(true);
     setMessage(
-      "If an account exists for that email, a reset link has been sent."
+      "a reset link has been sent. Please check your inbox and spam or junk folder ."
     );
     setLoading(false);
   }
