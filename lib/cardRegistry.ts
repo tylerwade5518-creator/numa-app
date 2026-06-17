@@ -35,7 +35,8 @@ export type CardId =
   | "veil"
   | "visionary"
   | "voyage"
-  | "witness";
+  | "witness"
+  | "pivot";
 
 export type CardRecord = {
   id: CardId;
@@ -479,6 +480,17 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
       "Treat today as part of the journey and focus on experiencing it rather than reaching an outcome.",
   },
 
+  pivot: {
+  id: "pivot",
+  title: "Pivot",
+  animatedVideo: "/cards/animated/Pivot.mp4",
+  meaning:
+    "Change direction without losing yourself—adjust the move, not the mission.",
+  whyToday:
+    "Today may show you where forcing the old plan is costing more than changing course.",
+  StardustAction:
+    "Make one small adjustment today instead of pushing harder in the wrong direction.",
+},
   witness: {
     id: "witness",
     title: "Witness",
