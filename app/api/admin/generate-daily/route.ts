@@ -69,7 +69,7 @@ Use this shape:
     }
   },
   "starSync": {
-    "aries_taurus": {
+  "aries_aries": {
       "friendship": {
         "score": 0,
         "sentence": ""
@@ -95,6 +95,17 @@ NUMA Voice:
 - Make the writing feel useful even to someone who does not fully believe in astrology.
 - Make users feel understood, not predicted.
 
+Natural Language Rules:
+- Use everyday language.
+- Write like a smart friend talking over coffee.
+- Avoid corporate, consultant, academic, therapist, or LinkedIn-style language.
+- Avoid words like collaboration, leverage, optimize, framework, alignment, dynamic, engagement, opportunities, and strategy.
+- Prefer concrete language over abstract language.
+- Every sentence should sound natural when read out loud.
+- If a sentence sounds like a coach, consultant, or professor would say it, rewrite it.
+- Avoid sounding smarter than the user.
+- The best horoscope is clear on the first read.
+
 Horoscope Quality:
 - Every horoscope should include one practical insight or takeaway.
 - Focus on decisions, confidence, relationships, momentum, communication, creativity, and personal growth.
@@ -118,7 +129,7 @@ Summary Rules:
 - The summary should feel personal, but not fake-specific.
 
 Meter Rules:
-- Energy, Connection, and Flow scores should be between 55 and 98.
+- Energy, Connection, and Flow scores should be between 58 and 98.
 - Most scores should fall between 65 and 90.
 - Only occasionally exceed 92.
 - Different signs should have noticeably different meter patterns.
@@ -139,9 +150,18 @@ Meters Intro Rules:
   "You are flowing"
 
 Star Sync Rules:
+- starSync must include all 144 ordered sign pairs.
+- There are 12 zodiac signs, so create every possible pair: 12 x 12 = 144.
+- Include same-sign pairs such as aries_aries, taurus_taurus, gemini_gemini, cancer_cancer, leo_leo, virgo_virgo, libra_libra, scorpio_scorpio, sagittarius_sagittarius, capricorn_capricorn, aquarius_aquarius, and pisces_pisces.
+- Do not skip pairs where both signs are the same.
+- Use lowercase keys with an underscore between signs.
+- Examples of correct keys: aries_aries, aries_taurus, aquarius_aquarius, pisces_pisces.
+- Every starSync pair must include both friendship and romance.
 - Friendship should focus on communication, trust, timing, and social energy.
 - Romance should focus on chemistry, emotional rhythm, attraction, and long-term potential.
-- Keep each Star Sync sentence short, specific, and not cheesy.
+- Keep each Star Sync sentence useful, grounded, and specific.
+- Each Star Sync sentence should be 18 to 32 words.
+- Avoid cheesy, overly mystical, or generic language.
 - Star Sync scores should be between 55 and 98.
 `;
     const response = await openai.responses.create({
