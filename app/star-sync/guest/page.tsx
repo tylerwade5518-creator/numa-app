@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, useMemo, useState } from "react";
+import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AnimatedSpaceBackground from "../../dashboard/AnimatedSpaceBackground";
 
@@ -269,19 +269,60 @@ function StarSyncGuestContent() {
   const [otherSign, setOtherSign] = useState<ZodiacSign | "">("");
   const [birthday, setBirthday] = useState("");
   const [syncType, setSyncType] = useState<SyncType>("friendship");
+  const [dailyContent, setDailyContent] = useState<any>(null);
+const [dailyError, setDailyError] = useState<string | null>(null);
+
+useEffect(() => {
+  async function loadDailyContent() {
+    try {
+      const res = await fetch("/api/daily", { cache: "no-store" });
+
+      if (!res.ok) {
+        throw new Error("Could not load daily content.");
+      }
+
+      const json = await res.json();
+      setDailyContent(json);
+    } catch (error: any) {
+      setDailyError(error.message || "Could not load daily content.");
+    }
+  }
+
+  loadDailyContent();
+}, []);
 
   const otherSignFromBirthday = useMemo(() => getSignFromDate(birthday), [birthday]);
 
   const effectiveOtherSign: ZodiacSign | null =
     mode === "birthday" ? otherSignFromBirthday : otherSign !== "" ? otherSign : null;
 
-  const scores = useMemo(() => {
-    if (!effectiveOtherSign) return null;
-    return getScores(ownerSign, effectiveOtherSign);
-  }, [ownerSign, effectiveOtherSign]);
+  const activeStarSync = useMemo(() => {
+  if (!dailyContent || !effectiveOtherSign) return null;
 
-  const activeScore = scores ? scores[syncType] : 0;
-  const activeReading = getReading(syncType, activeScore);
+  const starSync = dailyContent.starSync;
+  if (!starSync) return null;
+
+  const keyA = `${ownerSign.toLowerCase()}_${effectiveOtherSign.toLowerCase()}`;
+  const keyB = `${effectiveOtherSign.toLowerCase()}_${ownerSign.toLowerCase()}`;
+
+  const pair = starSync[keyA] || starSync[keyB];
+
+  if (!pair) return null;
+
+  const typeKey = syncType === "romantic" ? "romance" : "friendship";
+
+  return pair[typeKey] || null;
+}, [dailyContent, ownerSign, effectiveOtherSign, syncType]);
+
+const activeScore =
+  activeStarSync?.score ??
+  activeStarSync?.percentage ??
+  50;
+
+const activeReading =
+  activeStarSync?.sentence ||
+  activeStarSync?.reading ||
+  "Today’s Star Sync reading is still loading.";
 
   const runStarSync = () => {
     if (!effectiveOtherSign) return;
@@ -445,7 +486,7 @@ function StarSyncGuestContent() {
           </section>
         )}
 
-        {step === "results" && effectiveOtherSign && scores && (
+        {step === "results" && effectiveOtherSign && (
           <>
             <section className="text-center">
               <p className="text-[11px] uppercase tracking-[0.28em] text-sky-200/90">
