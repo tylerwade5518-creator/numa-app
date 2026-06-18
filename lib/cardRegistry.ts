@@ -37,7 +37,8 @@ export type CardId =
   | "voyage"
   | "witness"
   | "pivot"
-  | "friction";
+  | "friction"
+  | "edge";
 
 export type CardRecord = {
   id: CardId;
@@ -505,6 +506,20 @@ friction: {
 
   StardustAction:
     "Notice one place where you're forcing progress today and try a different angle instead.",
+},
+
+edge: {
+  id: "edge",
+  title: "Edge",
+  animatedVideo: "/cards/animated/edge.mp4",
+  meaning:
+    "You are standing at the edge of what you know. The next step starts with respect for the unknown.",
+
+  whyToday:
+    "This card appears when something ahead feels bigger than your current plan. A quiet pause may help you see the moment clearly before moving.",
+
+  StardustAction:
+    "Take one calm step toward something that feels just outside your comfort zone.",
 },
 
   witness: {
