@@ -36,7 +36,8 @@ export type CardId =
   | "visionary"
   | "voyage"
   | "witness"
-  | "pivot";
+  | "pivot"
+  | "friction";
 
 export type CardRecord = {
   id: CardId;
@@ -483,7 +484,7 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
   pivot: {
   id: "pivot",
   title: "Pivot",
-  animatedVideo: "/cards/animated/Pivot.mp4",
+  animatedVideo: "/cards/animated/pivot.mp4",
   meaning:
     "Change direction without losing yourself—adjust the move, not the mission.",
   whyToday:
@@ -491,6 +492,21 @@ export const CARD_REGISTRY: Record<CardId, CardRecord> = {
   StardustAction:
     "Make one small adjustment today instead of pushing harder in the wrong direction.",
 },
+
+friction: {
+  id: "friction",
+  title: "Friction",
+  animatedVideo: "/cards/animated/friction.mp4",
+  meaning:
+    "Resistance is information. When something feels harder than it should, slow down and look closer before pushing harder.",
+
+  whyToday:
+    "A small frustration today may be pointing toward a better approach. The obstacle is not the message—the lesson behind it is.",
+
+  StardustAction:
+    "Notice one place where you're forcing progress today and try a different angle instead.",
+},
+
   witness: {
     id: "witness",
     title: "Witness",

@@ -1277,19 +1277,7 @@ if (
                 </span>
               </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  closeSettingsMenu();
-                  router.push("/settings/dashboard");
-                }}
-                className="w-full rounded-2xl border border-slate-400/70 bg-slate-900/90 px-4 py-2.5 text-left text-sm font-semibold text-slate-100 hover:bg-slate-800/90"
-              >
-                Dashboard Layout
-                <span className="block text-[11px] font-normal text-slate-300/95">
-                  Choose which widgets appear when you tap your band.
-                </span>
-              </button>
+              
             </div>
           </div>
         </div>
