@@ -294,11 +294,7 @@ export default function ProfileSettingsPage() {
             {error}
           </div>
         )}
-        {ok && (
-          <div className="rounded-2xl border border-emerald-700/40 bg-emerald-950/20 px-3 py-2 text-xs text-emerald-100">
-            {ok}
-          </div>
-        )}
+        
 
         <section className="rounded-3xl border border-white/10 bg-slate-950/85 p-4 sm:p-5 backdrop-blur-xl shadow-[0_0_35px_rgba(0,0,0,0.8)]">
           <h2 className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-300">Identity</h2>
@@ -380,6 +376,12 @@ export default function ProfileSettingsPage() {
               Log out
             </button>
           </div>
+
+          {ok && (
+          <div className="rounded-2xl border border-emerald-700/40 bg-emerald-950/20 px-3 py-2 text-xs text-emerald-100">
+            {ok}
+          </div>
+        )}
         </section>
       </main>
     </div>
