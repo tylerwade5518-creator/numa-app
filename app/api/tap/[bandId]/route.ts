@@ -101,13 +101,39 @@ export async function GET(
 
   const bandCode = String(band.band_code ?? bandIdOrCode).trim();
 
-  const { data: stateRow, error: stateError } = await supabaseAdmin
+  let { data: stateRow, error: stateError } = await supabaseAdmin
+  .from("band_state")
+  .select(
+    "band_id, band_code, tapshare_armed, tapshare_fields, tapshare_armed_until, starsync_armed, starsync_armed_at, starsync_used_at"
+  )
+  .eq("band_id", bandCode)
+  .maybeSingle();
+
+if (!stateRow && band?.id) {
+  const byBandId = await supabaseAdmin
     .from("band_state")
     .select(
       "band_id, band_code, tapshare_armed, tapshare_fields, tapshare_armed_until, starsync_armed, starsync_armed_at, starsync_used_at"
     )
-    .eq("band_id", bandCode)
+    .eq("band_id", band.id)
     .maybeSingle();
+
+  stateRow = byBandId.data;
+  stateError = byBandId.error;
+}
+
+if (!stateRow) {
+  const byBandCode = await supabaseAdmin
+    .from("band_state")
+    .select(
+      "band_id, band_code, tapshare_armed, tapshare_fields, tapshare_armed_until, starsync_armed, starsync_armed_at, starsync_used_at"
+    )
+    .eq("band_code", bandCode)
+    .maybeSingle();
+
+  stateRow = byBandCode.data;
+  stateError = byBandCode.error;
+}
 
   const now = new Date();
   const nowIso = now.toISOString();
@@ -116,7 +142,7 @@ export async function GET(
     const starSyncArmed = Boolean(stateRow?.starsync_armed);
     const starSyncUsed = Boolean(stateRow?.starsync_used_at);
 
-    if (starSyncArmed && !starSyncUsed) {
+    if (stateRow && starSyncArmed && !starSyncUsed) {
       await supabaseAdmin
         .from("band_state")
         .update({
@@ -124,7 +150,7 @@ export async function GET(
           starsync_used_at: nowIso,
           updated_at: nowIso,
         })
-        .eq("band_id", bandCode);
+        .eq("band_id", stateRow.band_id);
 
       return jsonRedirect(
         redirectPath(
