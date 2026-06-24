@@ -28,7 +28,8 @@ export const config = {
   matcher: [
     "/dashboard/:path*",
     "/settings/:path*",
-    "/star-sync/:path*",
+    "/star-sync",
+    "/star-sync/",
     "/setup/:path*",
   ],
 };
