@@ -15,19 +15,16 @@ type ProfileRow = {
   created_at: string | null;
   updated_at: string | null;
 
-  // Tap Share core
-  email: string | null; // Tap Share email (NOT auth email)
+  email: string | null;
   phone: string | null;
   website: string | null;
   instagram: string | null;
   tiktok: string | null;
 
-  // Expanded socials
   linkedin: string | null;
   x: string | null;
   youtube: string | null;
 
-  // New
   whatsapp: string | null;
   snapchat: string | null;
   venmo: string | null;
@@ -42,6 +39,27 @@ function cleanHandle(s: string) {
   return s.replace(/^@/, "").trim();
 }
 
+function getZodiacSign(dateString: string) {
+  if (!dateString) return "";
+
+  const date = new Date(dateString + "T00:00:00");
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+
+  if ((month === 1 && day >= 20) || (month === 2 && day <= 18)) return "Aquarius";
+  if ((month === 2 && day >= 19) || (month === 3 && day <= 20)) return "Pisces";
+  if ((month === 3 && day >= 21) || (month === 4 && day <= 19)) return "Aries";
+  if ((month === 4 && day >= 20) || (month === 5 && day <= 20)) return "Taurus";
+  if ((month === 5 && day >= 21) || (month === 6 && day <= 20)) return "Gemini";
+  if ((month === 6 && day >= 21) || (month === 7 && day <= 22)) return "Cancer";
+  if ((month === 7 && day >= 23) || (month === 8 && day <= 22)) return "Leo";
+  if ((month === 8 && day >= 23) || (month === 9 && day <= 22)) return "Virgo";
+  if ((month === 9 && day >= 23) || (month === 10 && day <= 22)) return "Libra";
+  if ((month === 10 && day >= 23) || (month === 11 && day <= 21)) return "Scorpio";
+  if ((month === 11 && day >= 22) || (month === 12 && day <= 21)) return "Sagittarius";
+  return "Capricorn";
+}
+
 export default function ProfileSettingsPage() {
   const router = useRouter();
 
@@ -53,23 +71,22 @@ export default function ProfileSettingsPage() {
 
   const [userId, setUserId] = useState<string | null>(null);
 
-  // Identity
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
 
-  // Contact
+  const [birthdate, setBirthdate] = useState("");
+  const [sign, setSign] = useState("");
+
   const [phone, setPhone] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [website, setWebsite] = useState("");
 
-  // Socials
   const [instagram, setInstagram] = useState("");
   const [tiktok, setTiktok] = useState("");
   const [linkedin, setLinkedin] = useState("");
   const [x, setX] = useState("");
   const [youtube, setYoutube] = useState("");
 
-  // New
   const [whatsapp, setWhatsapp] = useState("");
   const [snapchat, setSnapchat] = useState("");
   const [venmo, setVenmo] = useState("");
@@ -109,7 +126,6 @@ export default function ProfileSettingsPage() {
         return;
       }
 
-      // If profile row missing, create it
       if (!prof) {
         const { error: insErr } = await supabase.from("profiles").insert({
           user_id: uid,
@@ -148,6 +164,9 @@ export default function ProfileSettingsPage() {
     function hydrateFromProfile(p: Partial<ProfileRow>) {
       setDisplayName(p.display_name ?? "");
       setUsername(p.username ?? "");
+
+      setBirthdate(p.birthdate ?? "");
+      setSign(p.sign ?? "");
 
       setPhone(p.phone ?? "");
       setContactEmail(p.email ?? "");
@@ -188,12 +207,15 @@ export default function ProfileSettingsPage() {
       setError("Display name is required.");
       return;
     }
+
     if (!un || !isValidUsername(un)) {
       setError("Username can only contain letters, numbers, dots, dashes, and underscores.");
       return;
     }
 
-    // normalize-ish
+    const bd = birthdate || null;
+    const calculatedSign = bd ? getZodiacSign(bd) : null;
+
     const ph = phone.trim();
     const em = contactEmail.trim().toLowerCase();
     const web = website.trim();
@@ -211,12 +233,16 @@ export default function ProfileSettingsPage() {
     const ca = cashapp.trim().replace(/^\$/, "").trim();
 
     setSaving(true);
+
     try {
       const { error: updErr } = await supabase
         .from("profiles")
         .update({
           display_name: dn,
           username: un,
+
+          birthdate: bd,
+          sign: calculatedSign,
 
           phone: ph || null,
           email: em || null,
@@ -228,7 +254,7 @@ export default function ProfileSettingsPage() {
           x: xh || null,
           youtube: yt || null,
 
-          whatsapp: wa || null, // could be phone or wa.me url
+          whatsapp: wa || null,
           snapchat: sc || null,
           venmo: vm || null,
           cashapp: ca || null,
@@ -238,7 +264,9 @@ export default function ProfileSettingsPage() {
         .eq("user_id", userId);
 
       if (updErr) throw updErr;
-      setOk("Saved.");
+
+      setSign(calculatedSign ?? "");
+      setOk("Saved changes.");
     } catch (e: any) {
       setError(e?.message || "Failed to save.");
     } finally {
@@ -260,6 +288,7 @@ export default function ProfileSettingsPage() {
   }
 
   const initialLetter = (displayName.trim()?.[0] || "U").toUpperCase();
+  const previewSign = birthdate ? getZodiacSign(birthdate) : sign;
 
   return (
     <div
@@ -278,8 +307,9 @@ export default function ProfileSettingsPage() {
           <div className="space-y-1">
             <p className="text-[11px] uppercase tracking-[0.25em] text-slate-400">Settings</p>
             <h1 className="text-xl font-semibold text-slate-50 sm:text-2xl">Profile & Tap Share</h1>
-            <p className="text-xs text-slate-300">Update what Tap Share can pull from.</p>
+            <p className="text-xs text-slate-300">Update your profile, sign, and Tap Share info.</p>
           </div>
+
           <button
             type="button"
             onClick={() => router.push("/dashboard")}
@@ -294,7 +324,6 @@ export default function ProfileSettingsPage() {
             {error}
           </div>
         )}
-        
 
         <section className="rounded-3xl border border-white/10 bg-slate-950/85 p-4 sm:p-5 backdrop-blur-xl shadow-[0_0_35px_rgba(0,0,0,0.8)]">
           <h2 className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-300">Identity</h2>
@@ -309,6 +338,7 @@ export default function ProfileSettingsPage() {
 
             <div className="flex-1 space-y-3 text-xs">
               <Field label="Display name" value={displayName} onChange={setDisplayName} placeholder="Tyler" />
+
               <div className="space-y-1">
                 <label className="block text-[11px] text-slate-300">Username / handle</label>
                 <div className="flex items-center gap-2">
@@ -327,11 +357,44 @@ export default function ProfileSettingsPage() {
         </section>
 
         <section className="rounded-3xl border border-white/10 bg-slate-950/85 p-4 sm:p-5 backdrop-blur-xl shadow-[0_0_35px_rgba(0,0,0,0.8)]">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-300">Birthday & Sign</h2>
+          <p className="mt-1 text-[11px] text-slate-400">
+            Used for your daily NUMA readings and Star Sync.
+          </p>
+
+          <div className="mt-4 space-y-3 text-xs">
+            <Field
+              label="Birthday"
+              value={birthdate}
+              onChange={(v) => {
+                setBirthdate(v);
+                setSign(getZodiacSign(v));
+              }}
+              placeholder="YYYY-MM-DD"
+              type="date"
+              note="Changing your birthday will automatically update your sign."
+            />
+
+            {previewSign ? (
+              <div className="rounded-2xl border border-yellow-200/20 bg-yellow-200/10 px-3 py-2 text-[11px] text-slate-200">
+                Your sign will be saved as{" "}
+                <span className="font-semibold text-yellow-200">{previewSign}</span>.
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-slate-700 bg-slate-900/50 px-3 py-2 text-[11px] text-slate-400">
+                Add your birthday to set your sign.
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-white/10 bg-slate-950/85 p-4 sm:p-5 backdrop-blur-xl shadow-[0_0_35px_rgba(0,0,0,0.8)]">
           <h2 className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-300">Contact Channels</h2>
           <p className="mt-1 text-[11px] text-slate-400">Used when selected in Tap Share.</p>
 
           <div className="mt-4 space-y-3 text-xs">
             <Field label="Phone" value={phone} onChange={setPhone} placeholder="+1 (555) 123-4567" />
+
             <Field
               label="Email (Tap Share)"
               value={contactEmail}
@@ -340,6 +403,7 @@ export default function ProfileSettingsPage() {
               type="email"
               note="This does not change your login email — it’s just what gets shared."
             />
+
             <Field label="Website" value={website} onChange={setWebsite} placeholder="https://your-site.com" />
             <Field label="Instagram" value={instagram} onChange={setInstagram} placeholder="@your_ig" />
             <Field label="TikTok" value={tiktok} onChange={setTiktok} placeholder="@your_tiktok" />
@@ -378,10 +442,10 @@ export default function ProfileSettingsPage() {
           </div>
 
           {ok && (
-          <div className="rounded-2xl border border-emerald-700/40 bg-emerald-950/20 px-3 py-2 text-xs text-emerald-100">
-            {ok}
-          </div>
-        )}
+            <div className="mt-4 rounded-2xl border border-emerald-700/40 bg-emerald-950/20 px-3 py-2 text-xs text-emerald-100">
+              {ok}
+            </div>
+          )}
         </section>
       </main>
     </div>
