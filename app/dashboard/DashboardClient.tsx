@@ -1277,6 +1277,19 @@ if (
                 </span>
               </button>
 
+<button
+  type="button"
+  onClick={() => {
+    closeSettingsMenu();
+    router.push("/settings/support");
+  }}
+  className="w-full rounded-2xl border border-sky-300/70 bg-slate-900/80 px-4 py-2.5 text-left text-sm font-semibold text-sky-100 hover:bg-slate-800/90"
+>
+  Help & Support
+  <span className="block text-[11px] font-normal text-slate-300">
+    FAQs, troubleshooting, and contact information.
+  </span>
+</button>
               
             </div>
           </div>
