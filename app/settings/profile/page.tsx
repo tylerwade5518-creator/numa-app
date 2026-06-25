@@ -5,30 +5,35 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabase/client";
 
+const APP_VERSION = "1.0.0";
+
 type ProfileRow = {
   user_id: string;
   display_name: string | null;
   username: string | null;
-
+  band_code: string | null;
   birthdate: string | null;
   sign: string | null;
   created_at: string | null;
   updated_at: string | null;
-
   email: string | null;
   phone: string | null;
   website: string | null;
   instagram: string | null;
   tiktok: string | null;
-
   linkedin: string | null;
   x: string | null;
   youtube: string | null;
-
   whatsapp: string | null;
   snapchat: string | null;
   venmo: string | null;
   cashapp: string | null;
+};
+
+type BandInfo = {
+  band_code: string | null;
+  status: string | null;
+  claimed_at: string | null;
 };
 
 function isValidUsername(u: string) {
@@ -41,7 +46,6 @@ function cleanHandle(s: string) {
 
 function getZodiacSign(dateString: string) {
   if (!dateString) return "";
-
   const date = new Date(dateString + "T00:00:00");
   const month = date.getMonth() + 1;
   const day = date.getDate();
@@ -60,33 +64,47 @@ function getZodiacSign(dateString: string) {
   return "Capricorn";
 }
 
+function formatDate(value: string | null) {
+  if (!value) return "Not available";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Not available";
+  return date.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+function prettyStatus(status: string | null) {
+  if (!status) return "Not linked";
+  if (status.toLowerCase() === "claimed") return "Linked";
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
 export default function ProfileSettingsPage() {
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
-
   const [userId, setUserId] = useState<string | null>(null);
+
+  const [bandInfo, setBandInfo] = useState<BandInfo | null>(null);
 
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
-
   const [birthdate, setBirthdate] = useState("");
   const [sign, setSign] = useState("");
 
   const [phone, setPhone] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [website, setWebsite] = useState("");
-
   const [instagram, setInstagram] = useState("");
   const [tiktok, setTiktok] = useState("");
   const [linkedin, setLinkedin] = useState("");
   const [x, setX] = useState("");
   const [youtube, setYoutube] = useState("");
-
   const [whatsapp, setWhatsapp] = useState("");
   const [snapchat, setSnapchat] = useState("");
   const [venmo, setVenmo] = useState("");
@@ -126,7 +144,9 @@ export default function ProfileSettingsPage() {
         return;
       }
 
-      if (!prof) {
+      let profile = prof as Partial<ProfileRow> | null;
+
+      if (!profile) {
         const { error: insErr } = await supabase.from("profiles").insert({
           user_id: uid,
           display_name: session.user.user_metadata?.display_name ?? null,
@@ -152,32 +172,49 @@ export default function ProfileSettingsPage() {
           return;
         }
 
-        hydrateFromProfile((prof2 || {}) as Partial<ProfileRow>);
-        setLoading(false);
-        return;
+        profile = prof2 as Partial<ProfileRow>;
       }
 
-      hydrateFromProfile(prof as Partial<ProfileRow>);
-      setLoading(false);
+      hydrateFromProfile(profile || {});
+
+      const profileBandCode = String(profile?.band_code ?? "").trim();
+
+      if (profileBandCode) {
+        const { data: bandData } = await supabase
+          .from("bands")
+          .select("band_code, status, claimed_at")
+          .eq("band_code", profileBandCode)
+          .maybeSingle();
+
+        if (mounted) {
+          setBandInfo(
+            bandData || {
+              band_code: profileBandCode,
+              status: "claimed",
+              claimed_at: null,
+            }
+          );
+        }
+      } else if (mounted) {
+        setBandInfo(null);
+      }
+
+      if (mounted) setLoading(false);
     }
 
     function hydrateFromProfile(p: Partial<ProfileRow>) {
       setDisplayName(p.display_name ?? "");
       setUsername(p.username ?? "");
-
       setBirthdate(p.birthdate ?? "");
       setSign(p.sign ?? "");
-
       setPhone(p.phone ?? "");
       setContactEmail(p.email ?? "");
       setWebsite(p.website ?? "");
-
       setInstagram(p.instagram ?? "");
       setTiktok(p.tiktok ?? "");
       setLinkedin((p as any).linkedin ?? "");
       setX((p as any).x ?? "");
       setYoutube((p as any).youtube ?? "");
-
       setWhatsapp((p as any).whatsapp ?? "");
       setSnapchat((p as any).snapchat ?? "");
       setVenmo((p as any).venmo ?? "");
@@ -216,22 +253,6 @@ export default function ProfileSettingsPage() {
     const bd = birthdate || null;
     const calculatedSign = bd ? getZodiacSign(bd) : null;
 
-    const ph = phone.trim();
-    const em = contactEmail.trim().toLowerCase();
-    const web = website.trim();
-
-    const ig = cleanHandle(instagram);
-    const tt = cleanHandle(tiktok);
-    const li = linkedin.trim();
-
-    const xh = cleanHandle(x);
-    const yt = youtube.trim();
-
-    const wa = whatsapp.trim();
-    const sc = cleanHandle(snapchat);
-    const vm = cleanHandle(venmo);
-    const ca = cashapp.trim().replace(/^\$/, "").trim();
-
     setSaving(true);
 
     try {
@@ -240,25 +261,20 @@ export default function ProfileSettingsPage() {
         .update({
           display_name: dn,
           username: un,
-
           birthdate: bd,
           sign: calculatedSign,
-
-          phone: ph || null,
-          email: em || null,
-          website: web || null,
-
-          instagram: ig || null,
-          tiktok: tt || null,
-          linkedin: li || null,
-          x: xh || null,
-          youtube: yt || null,
-
-          whatsapp: wa || null,
-          snapchat: sc || null,
-          venmo: vm || null,
-          cashapp: ca || null,
-
+          phone: phone.trim() || null,
+          email: contactEmail.trim().toLowerCase() || null,
+          website: website.trim() || null,
+          instagram: cleanHandle(instagram) || null,
+          tiktok: cleanHandle(tiktok) || null,
+          linkedin: linkedin.trim() || null,
+          x: cleanHandle(x) || null,
+          youtube: youtube.trim() || null,
+          whatsapp: whatsapp.trim() || null,
+          snapchat: cleanHandle(snapchat) || null,
+          venmo: cleanHandle(venmo) || null,
+          cashapp: cashapp.trim().replace(/^\$/, "").trim() || null,
           updated_at: new Date().toISOString(),
         })
         .eq("user_id", userId);
@@ -306,8 +322,10 @@ export default function ProfileSettingsPage() {
         <header className="flex items-center justify-between gap-3">
           <div className="space-y-1">
             <p className="text-[11px] uppercase tracking-[0.25em] text-slate-400">Settings</p>
-            <h1 className="text-xl font-semibold text-slate-50 sm:text-2xl">Profile & Tap Share</h1>
-            <p className="text-xs text-slate-300">Update your profile, sign, and Tap Share info.</p>
+            <h1 className="text-xl font-semibold text-slate-50 sm:text-2xl">Profile Settings</h1>
+            <p className="text-xs text-slate-300">
+              Manage your account, NUMA Band, and Tap Share information.
+            </p>
           </div>
 
           <button
@@ -324,6 +342,33 @@ export default function ProfileSettingsPage() {
             {error}
           </div>
         )}
+
+        <section className="rounded-3xl border border-white/10 bg-slate-950/85 p-4 sm:p-5 backdrop-blur-xl shadow-[0_0_35px_rgba(0,0,0,0.8)]">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-300">
+                My NUMA Band
+              </h2>
+              <p className="mt-1 text-[11px] text-slate-400">
+                Use this information if you ever contact support.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => router.push("/settings/support")}
+              className="rounded-2xl border border-sky-300/50 bg-sky-500/10 px-3 py-1.5 text-[11px] font-medium text-sky-100 hover:bg-sky-500/20"
+            >
+              Help & Support
+            </button>
+          </div>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <InfoRow label="Band ID" value={bandInfo?.band_code || "Not linked"} />
+            <InfoRow label="Band Status" value={prettyStatus(bandInfo?.status || null)} />
+            <InfoRow label="Activation Date" value={formatDate(bandInfo?.claimed_at || null)} />
+            <InfoRow label="App Version" value={APP_VERSION} />
+          </div>
+        </section>
 
         <section className="rounded-3xl border border-white/10 bg-slate-950/85 p-4 sm:p-5 backdrop-blur-xl shadow-[0_0_35px_rgba(0,0,0,0.8)]">
           <h2 className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-300">Identity</h2>
@@ -415,7 +460,6 @@ export default function ProfileSettingsPage() {
             <Field label="LinkedIn" value={linkedin} onChange={setLinkedin} placeholder="https://linkedin.com/in/yourname OR handle" />
             <Field label="X" value={x} onChange={setX} placeholder="@yourhandle" />
             <Field label="YouTube" value={youtube} onChange={setYoutube} placeholder="@channel OR channel URL" />
-
             <Field label="WhatsApp" value={whatsapp} onChange={setWhatsapp} placeholder="+1 555 123 4567 OR wa.me link" />
             <Field label="Snapchat" value={snapchat} onChange={setSnapchat} placeholder="@snapuser" />
             <Field label="Venmo" value={venmo} onChange={setVenmo} placeholder="@venmouser" />
@@ -448,6 +492,15 @@ export default function ProfileSettingsPage() {
           )}
         </section>
       </main>
+    </div>
+  );
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-700/70 bg-slate-900/70 px-4 py-3">
+      <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">{label}</p>
+      <p className="mt-1 break-words text-sm font-semibold text-slate-100">{value}</p>
     </div>
   );
 }
