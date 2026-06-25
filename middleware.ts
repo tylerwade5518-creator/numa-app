@@ -30,6 +30,5 @@ export const config = {
     "/settings/:path*",
     "/star-sync",
     "/star-sync/",
-    "/setup/:path*",
   ],
 };
