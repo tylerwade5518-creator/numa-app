@@ -30,39 +30,50 @@ export default function SignupClient() {
 
   const redirectRaw = searchParams.get("redirect") || "/setup";
   const bandFromUrl = (searchParams.get("band") || "").trim();
-
-  // Keep band attached to redirect path so the next page can keep it too
   const redirect = bandFromUrl ? appendBandParam(redirectRaw, bandFromUrl) : redirectRaw;
 
-  // Create a browser client instance for this page
   const supabase = useMemo(() => createSupabaseBrowser(), []);
 
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
+
   const [email, setEmail] = useState("");
+  const [confirmEmail, setConfirmEmail] = useState("");
+
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
-  // Persist pending band code so it survives auth flows
   useEffect(() => {
     if (!bandFromUrl) return;
     try {
       localStorage.setItem(PENDING_BAND_STORAGE_KEY, bandFromUrl);
-    } catch {
-      // ignore
-    }
+    } catch {}
   }, [bandFromUrl]);
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const normalizedConfirmEmail = confirmEmail.trim().toLowerCase();
 
   const canSubmit = useMemo(() => {
     if (!displayName.trim()) return false;
     if (!username.trim() || !isValidUsername(username.trim())) return false;
-    if (!email.trim()) return false;
-    if (!password.trim() || password.trim().length < 8) return false;
+    if (!normalizedEmail) return false;
+    if (!normalizedConfirmEmail) return false;
+    if (normalizedEmail !== normalizedConfirmEmail) return false;
+    if (!password || password.length < 8) return false;
+    if (!confirmPassword || password !== confirmPassword) return false;
     return true;
-  }, [displayName, username, email, password]);
+  }, [
+    displayName,
+    username,
+    normalizedEmail,
+    normalizedConfirmEmail,
+    password,
+    confirmPassword,
+  ]);
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
@@ -71,33 +82,44 @@ export default function SignupClient() {
 
     const dn = displayName.trim();
     const un = username.trim();
-    const em = email.trim().toLowerCase();
+    const em = normalizedEmail;
+    const em2 = normalizedConfirmEmail;
     const pw = password;
+    const pw2 = confirmPassword;
 
-    if (!dn || !un || !em || !pw) {
+    if (!dn || !un || !em || !em2 || !pw || !pw2) {
       setError("Please fill in all fields.");
       return;
     }
+
     if (!isValidUsername(un)) {
-      setError(
-        "Username can only contain letters, numbers, dots, dashes, and underscores."
-      );
+      setError("Username can only contain letters, numbers, dots, dashes, and underscores.");
       return;
     }
+
+    if (em !== em2) {
+      setError("Email addresses do not match.");
+      return;
+    }
+
     if (pw.length < 8) {
       setError("Password must be at least 8 characters.");
       return;
     }
 
+    if (pw !== pw2) {
+      setError("Passwords do not match.");
+      return;
+    }
+
     setLoading(true);
+
     try {
       const origin =
         typeof window !== "undefined"
           ? window.location.origin
           : "http://localhost:3000";
 
-      // After user clicks email, Supabase will send them here:
-      // /auth/callback?code=...&next=/dashboard (or whatever redirect is)
       const emailRedirectTo = `${origin}/auth/callback?next=${encodeURIComponent(
         redirect
       )}`;
@@ -116,14 +138,13 @@ export default function SignupClient() {
 
       if (signUpError) throw signUpError;
 
-      // If email confirm is OFF, session exists and we can move immediately.
       if (data.session) {
         router.replace(redirect);
         return;
       }
 
       setInfo(
-        "Account created. Check your email to confirm — then you’ll continue setup automatically."
+        `Account created. Check ${em} to confirm your email, then you’ll continue setup automatically. If you do not see it, check Spam or Promotions.`
       );
     } catch (err: any) {
       setError(err?.message || "Signup failed.");
@@ -138,9 +159,11 @@ export default function SignupClient() {
         <div className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
           NUMA BANDS
         </div>
+
         <h1 className="mt-2 text-2xl font-semibold">Create account</h1>
+
         <p className="mt-1 text-sm text-slate-300">
-          This creates your long-term NUMA login.
+          This email becomes your NUMA login and recovery email.
         </p>
 
         {bandFromUrl && (
@@ -196,6 +219,30 @@ export default function SignupClient() {
 
           <div>
             <label className="block text-xs font-medium text-slate-300 mb-1">
+              Confirm email
+            </label>
+            <input
+              value={confirmEmail}
+              onChange={(e) => setConfirmEmail(e.target.value)}
+              className="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="you@example.com"
+              autoComplete="email"
+              type="email"
+            />
+
+            {confirmEmail && normalizedEmail !== normalizedConfirmEmail && (
+              <p className="mt-1 text-[11px] text-red-300">
+                Email addresses do not match.
+              </p>
+            )}
+          </div>
+
+          <div className="rounded-2xl border border-yellow-300/20 bg-yellow-300/10 px-3 py-2 text-[11px] text-yellow-100">
+            Double-check this email. You’ll need it to log in, recover your account, and access your NUMA Band.
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1">
               Password
             </label>
             <input
@@ -209,6 +256,26 @@ export default function SignupClient() {
             <p className="mt-1 text-[11px] text-slate-400">
               Minimum 8 characters.
             </p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1">
+              Confirm password
+            </label>
+            <input
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="••••••••"
+              autoComplete="new-password"
+              type="password"
+            />
+
+            {confirmPassword && password !== confirmPassword && (
+              <p className="mt-1 text-[11px] text-red-300">
+                Passwords do not match.
+              </p>
+            )}
           </div>
 
           {error && (
