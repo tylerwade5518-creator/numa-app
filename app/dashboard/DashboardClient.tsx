@@ -1290,7 +1290,20 @@ if (
     FAQs, troubleshooting, and contact information.
   </span>
 </button>
-              
+
+  <button
+  type="button"
+  onClick={() => {
+    closeSettingsMenu();
+    router.push("/creator");
+  }}
+  className="w-full rounded-2xl border border-purple-300/70 bg-slate-900/80 px-4 py-2.5 text-left text-sm font-semibold text-purple-100 hover:bg-slate-800/90"
+>
+  Creator Hub
+  <span className="block text-[11px] font-normal text-slate-300">
+    Video ideas, affiliate tips, and NUMA creator resources.
+  </span>
+</button>            
             </div>
           </div>
         </div>
