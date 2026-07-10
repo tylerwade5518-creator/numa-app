@@ -115,65 +115,64 @@ export default function CreatorHubPage() {
         </header>
 
         {/* AREA 1: FOUNDING CREATOR */}
-        <section className="overflow-hidden rounded-3xl border border-yellow-200/20 bg-yellow-200/10 shadow-[0_0_35px_rgba(0,0,0,0.8)] backdrop-blur-xl">
-          <div className="p-5 sm:p-6">
-            <p className="text-[11px] uppercase tracking-[0.24em] text-yellow-100">
-              Founding Creator
-            </p>
+        <section className="overflow-hidden rounded-3xl border border-violet-300/20 bg-gradient-to-br from-violet-950/90 via-indigo-950/90 to-slate-950/95 p-6 shadow-[0_0_45px_rgba(76,29,149,0.3)] backdrop-blur-xl sm:p-7">
+          <p className="text-[10px] uppercase tracking-[0.28em] text-violet-200/75">
+            Founding Creator
+          </p>
 
-            <h2 className="mt-2 text-xl font-semibold text-slate-50 sm:text-2xl">
-              Help shape NUMA from the beginning.
-            </h2>
+          <h2 className="mt-3 text-2xl font-semibold text-slate-50">
+            Welcome to NUMA.
+          </h2>
 
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-300">
-              Thank you for being one of the first creators helping introduce
-              NUMA. We are not looking for perfect videos. We are looking for
-              authentic moments that make people stop and ask, “What is that?”
-            </p>
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-300">
+            Thank you for being one of the first creators introducing NUMA.
+            Create authentic videos that spark curiosity, feel natural, and
+            make people want to tap.
+          </p>
 
-            <div className="mt-4 rounded-2xl border border-yellow-100/15 bg-black/25 px-4 py-3">
-              <p className="text-sm font-medium leading-relaxed text-yellow-50">
-                The best NUMA videos do not feel like ads. They feel like
-                someone discovering something worth sharing.
-              </p>
-            </div>
+          <div className="mt-5 inline-flex rounded-full border border-violet-300/20 bg-white/5 px-5 py-2">
+            <span className="text-sm font-semibold text-violet-100">
+              Earn over <span className="text-white">$6</span> for every band
+              you sell — with no cap on commissions.
+            </span>
+          </div>
+        </section>
+
+        {/* WHAT IS NUMA */}
+        <section className="rounded-3xl border border-white/10 bg-slate-950/85 p-5 shadow-[0_0_35px_rgba(0,0,0,0.8)] backdrop-blur-xl sm:p-6">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-300">
+            What is NUMA?
+          </p>
+
+          <p className="mt-3 text-sm leading-relaxed text-slate-300">
+            NUMA is an NFC bracelet that creates personal and social
+            experiences with a simple phone tap.
+          </p>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <FeatureCard
+              icon="✦"
+              title="Astrology Dashboard"
+              body="Tap the band with your phone to access daily astrology, moon insights, meters, and Cosmic Cards."
+            />
+
+            <FeatureCard
+              icon="↗"
+              title="Digital Business Card"
+              body="Arm Tap Share and let someone tap your band to instantly receive your selected contact information."
+            />
+
+            <FeatureCard
+              icon="♡"
+              title="Zodiac Compatibility"
+              body="Arm Star Sync and let someone tap your band to discover your friendship or romance compatibility."
+            />
           </div>
 
-          <div className="border-t border-white/10 bg-slate-950/55 p-5 sm:p-6">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-300">
-              What is NUMA?
-            </p>
-
-            <p className="mt-3 text-sm leading-relaxed text-slate-300">
-              NUMA is an NFC bracelet that creates personal and social
-              experiences with a simple phone tap.
-            </p>
-
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              <FeatureCard
-                icon="✦"
-                title="Astrology Dashboard"
-                body="Tap the band with your phone to access daily astrology, moon insights, meters, and Cosmic Cards."
-              />
-
-              <FeatureCard
-                icon="↗"
-                title="Digital Business Card"
-                body="Arm Tap Share and let someone tap your band to instantly receive your selected contact information."
-              />
-
-              <FeatureCard
-                icon="♡"
-                title="Zodiac Compatibility"
-                body="Arm Star Sync and let someone tap your band to discover your friendship or romance compatibility."
-              />
-            </div>
-
-            <p className="mt-4 text-xs leading-relaxed text-slate-400">
-              People do not buy NUMA because it uses NFC. They buy it because
-              it creates conversations, connections, and moments worth sharing.
-            </p>
-          </div>
+          <p className="mt-4 text-xs leading-relaxed text-slate-400">
+            People do not buy NUMA because it uses NFC. They buy it because it
+            creates conversations, connections, and moments worth sharing.
+          </p>
         </section>
 
         {/* AREA 2: CREATE */}
@@ -309,7 +308,9 @@ function SectionHeading({
         {title}
       </h3>
 
-      <p className="mt-2 text-xs leading-relaxed text-slate-400">{subtitle}</p>
+      <p className="mt-2 text-xs leading-relaxed text-slate-400">
+        {subtitle}
+      </p>
     </div>
   );
 }
@@ -329,19 +330,33 @@ function FeatureCard({
         {icon}
       </div>
 
-      <h3 className="mt-3 text-sm font-semibold text-slate-50">{title}</h3>
+      <h3 className="mt-3 text-sm font-semibold text-slate-50">
+        {title}
+      </h3>
 
-      <p className="mt-2 text-xs leading-relaxed text-slate-300">{body}</p>
+      <p className="mt-2 text-xs leading-relaxed text-slate-300">
+        {body}
+      </p>
     </div>
   );
 }
 
-function RuleCard({ title, body }: { title: string; body: string }) {
+function RuleCard({
+  title,
+  body,
+}: {
+  title: string;
+  body: string;
+}) {
   return (
     <div className="rounded-2xl border border-slate-700/70 bg-slate-900/70 px-4 py-3">
-      <p className="text-sm font-semibold text-slate-100">{title}</p>
+      <p className="text-sm font-semibold text-slate-100">
+        {title}
+      </p>
 
-      <p className="mt-1 text-xs leading-relaxed text-slate-300">{body}</p>
+      <p className="mt-1 text-xs leading-relaxed text-slate-300">
+        {body}
+      </p>
     </div>
   );
 }
