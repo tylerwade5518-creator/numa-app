@@ -1,6 +1,6 @@
 // app/dashboard/page.tsx
 "use client";
-
+import { BIRTHDAY_CARD } from "../../lib/birthdayCard";
 import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type SupabaseClient } from "@supabase/supabase-js";
@@ -430,7 +430,22 @@ const [sign, setSign] = useState("Aquarius");
 const [birthday, setBirthday] = useState("");
 
 const todayLabel = "Today’s Alignment";
+const birthdayDate = new Intl.DateTimeFormat("en-US", {
+  timeZone: "America/Los_Angeles",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+}).formatToParts(new Date());
 
+const birthdayYear = birthdayDate.find((p) => p.type === "year")?.value;
+const birthdayMonth = birthdayDate.find((p) => p.type === "month")?.value;
+const birthdayDay = birthdayDate.find((p) => p.type === "day")?.value;
+
+const isBrothersBirthday =
+  bandId.trim().toUpperCase() === "NUMA-0009" &&
+  birthdayYear === "2026" &&
+  birthdayMonth === "11" &&
+  birthdayDay === "13";
 useEffect(() => {
   let cancelled = false;
 
@@ -972,11 +987,11 @@ if (
   // ✅ TS-safe: treat registry as a string-keyed map for lookup
   const registry = CARD_REGISTRY as Record<string, import("../../lib/cardRegistry").CardRecord>;
 
-  const pinnedCard =
-    typeof pinnedCardSlug === "string" && pinnedCardSlug.length > 0
-      ? registry[pinnedCardSlug] ?? null
-      : null;
-
+  const pinnedCard = isBrothersBirthday
+  ? BIRTHDAY_CARD
+  : typeof pinnedCardSlug === "string" && pinnedCardSlug.length > 0
+    ? registry[pinnedCardSlug] ?? null
+    : null;
   return (
     <>
       <section>
